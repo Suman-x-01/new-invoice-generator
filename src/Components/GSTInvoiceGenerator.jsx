@@ -284,18 +284,31 @@ export default function GSTInvoiceGenerator() {
       .filter(Boolean);
   }
 
-  async function embedImage(pdfDoc, relativePath) {
-    const url = new URL(relativePath, import.meta.url);
-    const res = await fetch(url);
+  // async function embedImage(pdfDoc, relativePath) {
+  //   const url = new URL(relativePath, import.meta.url);
+  //   const res = await fetch(url);
+  //   const bytes = await res.arrayBuffer();
+  //   const b = new Uint8Array(bytes);
+  //   const isPNG = b[0] === 0x89 && b[1] === 0x50;
+  //   const isJPG = b[0] === 0xff && b[1] === 0xd8;
+
+  //   if (isPNG) return await pdfDoc.embedPng(bytes);
+  //   if (isJPG) return await pdfDoc.embedJpg(bytes);
+
+  //   throw new Error(`${relativePath} is not a valid PNG/JPEG`);
+  // }
+  async function embedImage(pdfDoc, path) {
+    const res = await fetch(path);
+
+    if (!res.ok) throw new Error(`Failed to load ${path}`);
+
     const bytes = await res.arrayBuffer();
     const b = new Uint8Array(bytes);
-    const isPNG = b[0] === 0x89 && b[1] === 0x50;
-    const isJPG = b[0] === 0xff && b[1] === 0xd8;
 
-    if (isPNG) return await pdfDoc.embedPng(bytes);
-    if (isJPG) return await pdfDoc.embedJpg(bytes);
+    if (b[0] === 0x89 && b[1] === 0x50) return await pdfDoc.embedPng(bytes);
+    if (b[0] === 0xff && b[1] === 0xd8) return await pdfDoc.embedJpg(bytes);
 
-    throw new Error(`${relativePath} is not a valid PNG/JPEG`);
+    throw new Error(path + " is not valid PNG/JPEG");
   }
 
   function numberToWords(num) {
@@ -380,9 +393,13 @@ export default function GSTInvoiceGenerator() {
 
     let y = 800;
 
-    const logoImg = await embedImage(pdfDoc, "./img/logo.png");
-    const qrImg = await embedImage(pdfDoc, "./img/qr_code.png");
-    const signImg = await embedImage(pdfDoc, "./img/signature.png");
+    // const logoImg = await embedImage(pdfDoc, "./img/logo.png");
+    // const qrImg = await embedImage(pdfDoc, "./img/qr_code.png");
+    // const signImg = await embedImage(pdfDoc, "./img/signature.png");
+
+    const logoImg = await embedImage(pdfDoc, "/img/logo.png");
+    const qrImg = await embedImage(pdfDoc, "/img/qr_code.png");
+    const signImg = await embedImage(pdfDoc, "/img/signature.png");
 
     page.drawImage(logoImg, {
       x: 40,
