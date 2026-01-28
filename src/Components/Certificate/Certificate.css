@@ -1,0 +1,4 @@
+/* Only keep this for html2canvas transformation */
+.pdf-shift-up {
+  transform: translateY(0px);
+}

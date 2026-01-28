@@ -1025,19 +1025,6 @@ export default function GSTInvoiceGenerator() {
   return (
     <div className="gst-app">
       {/* Navbar */}
-      <nav className="navbar">
-        <div className="navbar-container">
-          <div className="navbar-brand">
-            <FileText size={28} />
-            <span>GST Invoice Generator</span>
-          </div>
-          <div className="navbar-info">
-            <span className="navbar-subtitle">
-              Generate Professional Tax Invoices
-            </span>
-          </div>
-        </div>
-      </nav>
 
       {/* Main Content */}
       <div className="main-container">

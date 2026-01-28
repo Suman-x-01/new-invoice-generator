@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Aarav Sharma",
+    "father_name": "Rakesh Sharma",
+    "age": 24,
+    "gender": "Male"
+  },
+  {
+    "name": "Saanvi Mehta",
+    "father_name": "Kunal Mehta",
+    "age": 21,
+    "gender": "Female"
+  },
+  {
+    "name": "Rohan Verma",
+    "father_name": "Suresh Verma",
+    "age": 28,
+    "gender": "Male"
+  },
+  {
+    "name": "Isha Reddy",
+    "father_name": "Venkatesh Reddy",
+    "age": 26,
+    "gender": "Female"
+  },
+  {
+    "name": "Kabir Singh",
+    "father_name": "Arjun Singh",
+    "age": 30,
+    "gender": "Male"
+  },
+  {
+    "name": "Ananya Nair",
+    "father_name": "Pradeep Nair",
+    "age": 22,
+    "gender": "Female"
+  },
+  {
+    "name": "Vivaan Joshi",
+    "father_name": "Mahesh Joshi",
+    "age": 25,
+    "gender": "Male"
+  },
+  {
+    "name": "Diya Patel",
+    "father_name": "Manoj Patel",
+    "age": 23,
+    "gender": "Female"
+  },
+  {
+    "name": "Aditya Rao",
+    "father_name": "Rajesh Rao",
+    "age": 27,
+    "gender": "Male"
+  },
+  {
+    "name": "Meera Kapoor",
+    "father_name": "Sunil Kapoor",
+    "age": 24,
+    "gender": "Female"
+  }
+]
