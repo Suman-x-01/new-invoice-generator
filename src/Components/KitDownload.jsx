@@ -4952,7 +4952,7 @@ export default function KitDownload() {
       by -= 20;
     });
 
-    const footerText = `www.${companyName}.ai`;
+    const footerText = `www.${companyName}`;
     const footerSize = 36;
     const footerWidth = fontBold.widthOfTextAtSize(footerText, footerSize);
     const footerX = (pageSize[0] - footerWidth) / 2;
@@ -5600,7 +5600,7 @@ export default function KitDownload() {
       by -= 20;
     });
 
-    const footerText = `www.${companyName}.ai`;
+    const footerText = `www.${companyName}`;
     const footerSize = 36;
     const footerWidth = fontBold.widthOfTextAtSize(footerText, footerSize);
     const footerX = (pageSize[0] - footerWidth) / 2;
