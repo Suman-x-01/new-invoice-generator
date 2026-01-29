@@ -90,11 +90,11 @@ const Format3 = ({ student, index, excelDateToJSDate }) => {
           <p>Ref: CIT/LIFE/Online</p>
           <p className="ml-[250px]">Ref No.: {student.Ref_No}</p>
         </div>
-
+        {/* ============================== */}
         {/* Company Name Container */}
-        <div className="absolute top-[60px] left-[250px] text-center">
+        {/* <div className="absolute top-[60px] left-[250px] text-center">
           <p
-            className="mb-[-20px] font-semibold"
+            className="mb-[-25px] font-semibold"
             style={{ fontSize: "75px", fontFamily: "Calibri" }}
           >
             <span style={{ color: "#bb020d" }}>Consult</span>IT
@@ -105,16 +105,43 @@ const Format3 = ({ student, index, excelDateToJSDate }) => {
           >
             Technology Partners For Your Enterprise
           </p>
-        </div>
+        </div> */}
 
         {/* Certificate Heading */}
-        <div
+        {/* <div
           className="absolute top-[200px] left-[-50px] w-[900px] text-center font-semibold"
           style={{ fontSize: "40px", fontFamily: "'Times New Roman', serif" }}
         >
           <p className="underline">Training Completion Certificate</p>
+        </div> */}
+        {/* ===================================== */}
+        {/* Company Name Container - WITH MORE TOP SPACE */}
+        <div className="absolute top-[100px] left-0 right-0 text-center">
+          <p
+            className="mb-0 font-semibold leading-none"
+            style={{
+              fontSize: "75px",
+              fontFamily: "Calibri",
+              lineHeight: "1",
+            }}
+          >
+            <span style={{ color: "#bb020d" }}>Consult</span>IT
+          </p>
+          <p
+            className="text-base font-semibold mt-4" // ✅ Changed from mt-1 to mt-4
+            style={{ fontFamily: "Calibri" }}
+          >
+            Technology Partners For Your Enterprise
+          </p>
         </div>
 
+        {/* Certificate Heading - Adjust if needed */}
+        <div
+          className="absolute top-[230px] left-0 right-0 text-center font-semibold" // ✅ Adjusted from 220px to 230px
+          style={{ fontSize: "40px", fontFamily: "'Times New Roman', serif" }}
+        >
+          <p className="underline">Training Completion Certificate</p>
+        </div>
         {/* Certificate Data */}
         <div
           className="absolute top-[340px] left-[110px] w-[580px] text-base text-justify"
