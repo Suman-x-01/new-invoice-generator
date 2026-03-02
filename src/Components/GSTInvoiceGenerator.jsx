@@ -533,20 +533,20 @@ export default function GSTInvoiceGenerator() {
     const startY = y;
 
     page.drawText(addressLines[0] || "", {
-      x: 38,
-      y: startY - 15,
+      x: 40,
+      y: startY - 18,
       size: 9,
       font: bold,
     });
     page.drawText(addressLines[1] || "", {
       x: 40,
-      y: startY - 30,
+      y: startY - 34,
       size: 9,
       font,
     });
     page.drawText(addressLines[2] || "", {
       x: 40,
-      y: startY - 40,
+      y: startY - 49,
       size: 9,
       font,
     });
@@ -562,7 +562,7 @@ export default function GSTInvoiceGenerator() {
       size: 9,
       font,
     });
-    page.drawText("India", { x: 40, y: startY - 65, size: 9, font });
+    page.drawText("India", { x: 40, y: startY - 63, size: 9, font });
 
     const tableTopY = 560;
     const rowH = 18;
