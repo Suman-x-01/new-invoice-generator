@@ -534,35 +534,35 @@ export default function GSTInvoiceGenerator() {
 
     page.drawText(addressLines[0] || "", {
       x: 40,
-      y: startY - 18,
+      y: startY - 15,
       size: 9,
       font: bold,
     });
     page.drawText(addressLines[1] || "", {
       x: 40,
-      y: startY - 34,
+      y: startY - 28,
       size: 9,
       font,
     });
     page.drawText(addressLines[2] || "", {
       x: 40,
-      y: startY - 49,
+      y: startY - 41,
       size: 9,
       font,
     });
     page.drawText(addressLines[3] || "", {
       x: 40,
-      y: startY - 50,
+      y: startY - 54,
       size: 9,
       font,
     });
-    page.drawText(addressLines[4] || "", {
-      x: 40,
-      y: startY - 60,
-      size: 9,
-      font,
-    });
-    page.drawText("India", { x: 40, y: startY - 63, size: 9, font });
+    // page.drawText(addressLines[4] || "", {
+    //   x: 40,
+    //   y: startY - 0,
+    //   size: 9,
+    //   font,
+    // });
+    page.drawText("India", { x: 40, y: startY - 67, size: 9, font });
 
     const tableTopY = 560;
     const rowH = 18;
