@@ -562,7 +562,7 @@ export default function GSTInvoiceGenerator() {
     //   size: 9,
     //   font,
     // });
-    page.drawText("India", { x: 40, y: startY - 67, size: 9, font });
+    page.drawText("INDIA", { x: 40, y: startY - 67, size: 9, font });
 
     const tableTopY = 560;
     const rowH = 18;
