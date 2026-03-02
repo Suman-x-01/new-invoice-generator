@@ -521,7 +521,7 @@ export default function GSTInvoiceGenerator() {
 
     y -= 30;
     page.drawRectangle({ x: 40, y, width: 200, height: 18, color: blue });
-    page.drawText("Billed No.", {
+    page.drawText("Billed To.", {
       x: 46,
       y: y + 5,
       size: 9,
@@ -533,7 +533,7 @@ export default function GSTInvoiceGenerator() {
     const startY = y;
 
     page.drawText(addressLines[0] || "", {
-      x: 40,
+      x: 38,
       y: startY - 15,
       size: 9,
       font: bold,
@@ -552,17 +552,17 @@ export default function GSTInvoiceGenerator() {
     });
     page.drawText(addressLines[3] || "", {
       x: 40,
-      y: startY - 60,
+      y: startY - 50,
       size: 9,
       font,
     });
     page.drawText(addressLines[4] || "", {
-      x: 80,
+      x: 40,
       y: startY - 60,
       size: 9,
       font,
     });
-    page.drawText("India", { x: 40, y: startY - 50, size: 9, font });
+    page.drawText("India", { x: 40, y: startY - 65, size: 9, font });
 
     const tableTopY = 560;
     const rowH = 18;
