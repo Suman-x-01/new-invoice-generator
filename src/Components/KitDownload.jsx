@@ -1323,6 +1323,50 @@ export default function KitDownload() {
 
     // ---------- PAGE 1 ----------
     const page1 = pdfDoc.addPage(pageSize);
+    // ✅ CENTER LOGO ON PAGE 1
+    let logoImgPage1 = null;
+
+    try {
+      if (logoFile instanceof File) {
+        const buffer = await logoFile.arrayBuffer();
+
+        if (logoFile.type.includes("png")) {
+          logoImgPage1 = await pdfDoc.embedPng(buffer);
+        } else if (
+          logoFile.type.includes("jpeg") ||
+          logoFile.type.includes("jpg")
+        ) {
+          logoImgPage1 = await pdfDoc.embedJpg(buffer);
+        }
+      }
+    } catch (err) {
+      console.warn("Page1 logo load failed:", err);
+    }
+
+    if (logoImgPage1) {
+      const dims = logoImgPage1.scale(1);
+
+      // 🔥 control size
+      const maxWidth = 200;
+      const maxHeight = 120;
+
+      const scale = Math.min(maxWidth / dims.width, maxHeight / dims.height);
+
+      const lw = dims.width * scale;
+      const lh = dims.height * scale;
+
+      // ✅ CENTER POSITION
+      const centerX = (page1.getWidth() - lw) / 2;
+      const centerY = (page1.getHeight() - lh) / 2 + 100;
+      // +100 = move slightly up (adjust if needed)
+
+      page1.drawImage(logoImgPage1, {
+        x: centerX,
+        y: centerY,
+        width: lw,
+        height: lh,
+      });
+    }
     page1.drawRectangle({
       x: 0,
       y: 0,
@@ -1701,22 +1745,57 @@ export default function KitDownload() {
     // !====================
 
     // ── Static hardcoded image — TOP LEFT of white box ──
-    const staticImg = await embedImage(pdfDoc, esimlogo);
-    if (staticImg) {
-      const dims = staticImg.scale(1);
-      const maxSize = 80;
-      const scale = Math.min(maxSize / dims.width, maxSize / dims.height);
-      const sw = dims.width * scale;
-      const sh = dims.height * scale;
-      page2.drawImage(staticImg, {
-        x: boxX + 6,
-        y: boxY + boxH - sh - 6,
-        width: sw,
-        height: sh,
-      });
-    }
+    // const staticImg = await embedImage(pdfDoc, esimlogo);
+    // if (staticImg) {
+    //   const dims = staticImg.scale(1);
+    //   const maxSize = 80;
+    //   const scale = Math.min(maxSize / dims.width, maxSize / dims.height);
+    //   const sw = dims.width * scale;
+    //   const sh = dims.height * scale;
+    //   page2.drawImage(staticImg, {
+    //     x: boxX + 6,
+    //     y: boxY + boxH - sh - 6,
+    //     width: sw,
+    //     height: sh,
+    //   });
+    // }
 
     // ── Uploaded logo — TOP RIGHT of white box ──
+    // let logoImg = null;
+    // try {
+    //   if (logoFile instanceof File) {
+    //     // use logoFileTop in buildPdfBytesCsvOnly
+    //     const buffer = await logoFile.arrayBuffer();
+    //     if (logoFile.type.includes("png")) {
+    //       logoImg = await pdfDoc.embedPng(buffer);
+    //     } else if (
+    //       logoFile.type.includes("jpeg") ||
+    //       logoFile.type.includes("jpg")
+    //     ) {
+    //       logoImg = await pdfDoc.embedJpg(buffer);
+    //     }
+    //   } else {
+    //     logoImg = await embedImage(pdfDoc, "/images/logo.png");
+    //   }
+    // } catch (err) {
+    //   console.warn("Logo not found:", err);
+    // }
+
+    // if (logoImg) {
+    //   const dims = logoImg.scale(1);
+    //   const maxSize = 80;
+    //   const scale = Math.min(maxSize / dims.width, maxSize / dims.height);
+    //   const lw = dims.width * scale;
+    //   const lh = dims.height * scale;
+    //   page2.drawImage(logoImg, {
+    //     x: boxX + boxW - lw - 6,
+    //     y: boxY + boxH - lh - 6,
+    //     width: lw,
+    //     height: lh,
+    //   });
+    // }
+
+    // ── Uploaded logo — TOP CENTER above QR ──
     let logoImg = null;
     try {
       if (logoFile instanceof File) {
@@ -1744,8 +1823,8 @@ export default function KitDownload() {
       const lw = dims.width * scale;
       const lh = dims.height * scale;
       page2.drawImage(logoImg, {
-        x: boxX + boxW - lw - 6,
-        y: boxY + boxH - lh - 6,
+        x: boxX + (boxW - lw) / 2, // ✅ center horizontally
+        y: boxY + boxH - lh - 6, // ✅ top of white box
         width: lw,
         height: lh,
       });
@@ -1791,6 +1870,22 @@ export default function KitDownload() {
         size: 10,
         font: fontBold,
         color: rgb(1, 0, 0),
+      });
+    }
+
+    // ── Static esimlogo — BOTTOM CENTER below QR ──
+    const staticImg = await embedImage(pdfDoc, esimlogo);
+    if (staticImg) {
+      const dims = staticImg.scale(1);
+      const maxSize = 80;
+      const scale = Math.min(maxSize / dims.width, maxSize / dims.height);
+      const sw = dims.width * scale;
+      const sh = dims.height * scale;
+      page2.drawImage(staticImg, {
+        x: boxX + (boxW - sw) / 2, // ✅ center horizontally
+        y: boxY + 6, // ✅ bottom of white box
+        width: sw,
+        height: sh,
       });
     }
 
@@ -2104,60 +2199,60 @@ export default function KitDownload() {
       font: fontBold,
     });
 
-    const socialIcons = [
-      {
-        url: "https://www.eSimNow.ai",
-        icon: "https://cdn-icons-png.flaticon.com/512/841/841364.png",
-      },
-      {
-        url: "https://www.facebook.com/eSimNow.ai",
-        icon: "https://cdn-icons-png.flaticon.com/512/733/733547.png",
-      },
-      {
-        url: "https://www.instagram.com/eSimNow.ai",
-        icon: "https://cdn-icons-png.flaticon.com/512/2111/2111463.png",
-      },
-      {
-        url: "https://www.linkedin.com/company/esimnow",
-        icon: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
-      },
-      {
-        url: "https://x.com/eSimNow",
-        icon: "https://cdn-icons-png.flaticon.com/512/5969/5969020.png",
-      },
-    ];
-    const iconSize = 32;
-    const spacing = 20;
-    const totalWidth = socialIcons.length * (iconSize + spacing) - spacing;
-    let iconStartX = (pageSize[0] - totalWidth) / 2;
-    const iconY = 80;
-    const annots = [];
-    for (const s of socialIcons) {
-      const resp = await fetch(s.icon);
-      const bytes = await resp.arrayBuffer();
-      const img = await pdfDoc.embedPng(bytes);
-      page4.drawImage(img, {
-        x: iconStartX,
-        y: iconY,
-        width: iconSize,
-        height: iconSize,
-      });
-      const annotRef = pdfDoc.context.register(
-        pdfDoc.context.obj({
-          Type: "Annot",
-          Subtype: "Link",
-          Rect: [iconStartX, iconY, iconStartX + iconSize, iconY + iconSize],
-          Border: [0, 0, 0],
-          A: pdfDoc.context.obj({ Type: "Action", S: "URI", URI: s.url }),
-        }),
-      );
-      annots.push(annotRef);
-      iconStartX += iconSize + spacing;
-    }
-    const pageAnnots =
-      page4.node.lookup(PDFName.of("Annots")) || pdfDoc.context.obj([]);
-    annots.forEach((a) => pageAnnots.push(a));
-    page4.node.set(PDFName.of("Annots"), pageAnnots);
+    // const socialIcons = [
+    //   {
+    //     url: "https://www.eSimNow.ai",
+    //     icon: "https://cdn-icons-png.flaticon.com/512/841/841364.png",
+    //   },
+    //   {
+    //     url: "https://www.facebook.com/eSimNow.ai",
+    //     icon: "https://cdn-icons-png.flaticon.com/512/733/733547.png",
+    //   },
+    //   {
+    //     url: "https://www.instagram.com/eSimNow.ai",
+    //     icon: "https://cdn-icons-png.flaticon.com/512/2111/2111463.png",
+    //   },
+    //   {
+    //     url: "https://www.linkedin.com/company/esimnow",
+    //     icon: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
+    //   },
+    //   {
+    //     url: "https://x.com/eSimNow",
+    //     icon: "https://cdn-icons-png.flaticon.com/512/5969/5969020.png",
+    //   },
+    // ];
+    // const iconSize = 32;
+    // const spacing = 20;
+    // const totalWidth = socialIcons.length * (iconSize + spacing) - spacing;
+    // let iconStartX = (pageSize[0] - totalWidth) / 2;
+    // const iconY = 80;
+    // const annots = [];
+    // for (const s of socialIcons) {
+    //   const resp = await fetch(s.icon);
+    //   const bytes = await resp.arrayBuffer();
+    //   const img = await pdfDoc.embedPng(bytes);
+    //   page4.drawImage(img, {
+    //     x: iconStartX,
+    //     y: iconY,
+    //     width: iconSize,
+    //     height: iconSize,
+    //   });
+    //   const annotRef = pdfDoc.context.register(
+    //     pdfDoc.context.obj({
+    //       Type: "Annot",
+    //       Subtype: "Link",
+    //       Rect: [iconStartX, iconY, iconStartX + iconSize, iconY + iconSize],
+    //       Border: [0, 0, 0],
+    //       A: pdfDoc.context.obj({ Type: "Action", S: "URI", URI: s.url }),
+    //     }),
+    //   );
+    //   annots.push(annotRef);
+    //   iconStartX += iconSize + spacing;
+    // }
+    // const pageAnnots =
+    //   page4.node.lookup(PDFName.of("Annots")) || pdfDoc.context.obj([]);
+    // annots.forEach((a) => pageAnnots.push(a));
+    // page4.node.set(PDFName.of("Annots"), pageAnnots);
 
     return await pdfDoc.save();
   }
