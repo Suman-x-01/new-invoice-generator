@@ -1651,22 +1651,76 @@ export default function KitDownload() {
       color: rgb(1, 1, 1),
     });
 
+    // !==========================
+
+    // // ── Static hardcoded image — TOP LEFT of white box ──
+    // const staticImg = await embedImage(pdfDoc, esimlogo); // your imported 'image'
+    // if (staticImg) {
+    //   page2.drawImage(staticImg, {
+    //     x: boxX + 16,
+    //     y: boxY + boxH - 36, // top-left corner
+    //     width: 30,
+    //     height: 30,
+    //   });
+    // }
+
+    // // ── Uploaded logo — TOP RIGHT of white box ──
+    // // NOTE: use 'logoFileTop' instead of 'logoFile' in buildPdfBytesCsvOnly
+    // let logoImg = null;
+    // try {
+    //   if (logoFile instanceof File) {
+    //     const buffer = await logoFile.arrayBuffer();
+    //     if (logoFile.type.includes("png")) {
+    //       logoImg = await pdfDoc.embedPng(buffer);
+    //     } else if (
+    //       logoFile.type.includes("jpeg") ||
+    //       logoFile.type.includes("jpg")
+    //     ) {
+    //       logoImg = await pdfDoc.embedJpg(buffer);
+    //     }
+    //   } else {
+    //     logoImg = await embedImage(pdfDoc, "/images/logo.png");
+    //   }
+    // } catch (err) {
+    //   console.warn("Logo not found:", err);
+    // }
+
+    // if (logoImg) {
+    //   const dims = logoImg.scale(1);
+    //   const scale = 30 / dims.height;
+    //   const lw = dims.width * scale;
+    //   const lh = dims.height * scale;
+    //   page2.drawImage(logoImg, {
+    //     x: boxX + boxW - lw - 6, // top-right corner
+    //     y: boxY + boxH - lh - 6,
+    //     width: lw,
+    //     height: lh,
+    //   });
+    // }
+
+    // !====================
+
     // ── Static hardcoded image — TOP LEFT of white box ──
-    const staticImg = await embedImage(pdfDoc, esimlogo); // your imported 'image'
+    const staticImg = await embedImage(pdfDoc, esimlogo);
     if (staticImg) {
+      const dims = staticImg.scale(1);
+      const maxSize = 80;
+      const scale = Math.min(maxSize / dims.width, maxSize / dims.height);
+      const sw = dims.width * scale;
+      const sh = dims.height * scale;
       page2.drawImage(staticImg, {
-        x: boxX + 16,
-        y: boxY + boxH - 36, // top-left corner
-        width: 30,
-        height: 30,
+        x: boxX + 6,
+        y: boxY + boxH - sh - 6,
+        width: sw,
+        height: sh,
       });
     }
 
     // ── Uploaded logo — TOP RIGHT of white box ──
-    // NOTE: use 'logoFileTop' instead of 'logoFile' in buildPdfBytesCsvOnly
     let logoImg = null;
     try {
       if (logoFile instanceof File) {
+        // use logoFileTop in buildPdfBytesCsvOnly
         const buffer = await logoFile.arrayBuffer();
         if (logoFile.type.includes("png")) {
           logoImg = await pdfDoc.embedPng(buffer);
@@ -1685,17 +1739,17 @@ export default function KitDownload() {
 
     if (logoImg) {
       const dims = logoImg.scale(1);
-      const scale = 30 / dims.height;
+      const maxSize = 80;
+      const scale = Math.min(maxSize / dims.width, maxSize / dims.height);
       const lw = dims.width * scale;
       const lh = dims.height * scale;
       page2.drawImage(logoImg, {
-        x: boxX + boxW - lw - 6, // top-right corner
+        x: boxX + boxW - lw - 6,
         y: boxY + boxH - lh - 6,
         width: lw,
         height: lh,
       });
     }
-
     // ── QR code — center ──
     let qrImage = null;
     try {
