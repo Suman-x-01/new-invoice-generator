@@ -12,8 +12,10 @@ import image from "../../public/PDFGeneratorImages/image.png";
 import image1 from "../../public/PDFGeneratorImages/image1.png";
 import image2 from "../../public/PDFGeneratorImages/image2.png";
 import image3 from "../../public/PDFGeneratorImages/image3.png";
+import esimlogo from "../../public/PDFGeneratorImages/esim_logo.png";
 import JSZip from "jszip";
-
+// const zipQrListRef = useRef([]); // ✅ ADD THIS
+// const [zipQrList, setZipQrList] = useState([]);
 // ✅ HELPER: Sanitize text for PDF (remove non-WinAnsi chars but KEEP SPACES)
 // function sanitizeForPdf(text) {
 //   if (!text) return "";
@@ -21,7 +23,8 @@ import JSZip from "jszip";
 //     .replace(/[^\x20-\x7E]/g, "") // Remove non-ASCII (but \x20 is space, so it stays!)
 //     .trim();
 // }
-
+// import { useRef } from "react";
+let _zipQrData = [];
 function sanitizeForPdf(text) {
   if (!text) return "";
   return String(text)
@@ -81,6 +84,7 @@ function parseIccId(value) {
 export default function KitDownload() {
   const csvTopRef = useRef(null);
   const logoTopRef = useRef(null);
+  const zipQrListRef = useRef([]); // ✅ ADD HERE - inside component
 
   // without zip
   const [uploadedCsvTop, setUploadedCsvTop] = useState(null);
@@ -97,6 +101,65 @@ export default function KitDownload() {
   const [loading, setLoading] = useState(false);
   const [uploadedCsv, setUploadedCsv] = useState(null);
   const [uploadedLogo, setUploadedLogo] = useState(null);
+
+  // async function handleZipUpload(e) {
+  //   const file = e.target.files[0];
+  //   if (!file) return;
+
+  //   setUploadedZip(file);
+
+  //   const zip = await JSZip.loadAsync(file);
+  //   const qrList = [];
+
+  //   for (const entry of Object.values(zip.files)) {
+  //     if (entry.dir) continue;
+  //     if (!entry.name.match(/\.(png|jpg|jpeg)$/i)) continue;
+
+  //     const buffer = await entry.async("arraybuffer");
+  //     const iccId = entry.name
+  //       .split("/")
+  //       .pop()
+  //       .replace(/\.(png|jpg|jpeg)$/i, "");
+
+  //     const type = entry.name.toLowerCase().endsWith(".png") ? "png" : "jpg";
+
+  //     qrList.push({ iccId, buffer, type });
+  //   }
+
+  //   setZipQrList(qrList);
+  // }
+  // async function handleZipUpload(e) {
+  //   const file = e.target.files[0];
+  //   if (!file) return;
+
+  //   setUploadedZip(file);
+
+  //   const zip = await JSZip.loadAsync(file);
+  //   const qrList = [];
+
+  //   for (const entry of Object.values(zip.files)) {
+  //     if (entry.dir) continue;
+  //     if (!entry.name.match(/\.(png|jpg|jpeg)$/i)) continue;
+
+  //     const buffer = await entry.async("arraybuffer");
+  //     const iccId = entry.name
+  //       .split("/")
+  //       .pop()
+  //       .replace(/\.(png|jpg|jpeg)$/i, "");
+  //     const type = entry.name.toLowerCase().endsWith(".png") ? "png" : "jpg";
+  //     qrList.push({ iccId, buffer, type });
+  //   }
+
+  //   // ✅ Sort by filename for consistent ordering
+  //   qrList.sort((a, b) => a.iccId.localeCompare(b.iccId));
+
+  //   // zipQrListRef.current = qrList; // ✅ SET REF immediately (no async delay)
+  //   setZipQrList(qrList); // ✅ also set state for UI display
+  //   console.log(
+  //     "✅ ZIP loaded:",
+  //     qrList.map((q) => q.iccId),
+  //   );
+  // }
 
   async function handleZipUpload(e) {
     const file = e.target.files[0];
@@ -116,15 +179,24 @@ export default function KitDownload() {
         .split("/")
         .pop()
         .replace(/\.(png|jpg|jpeg)$/i, "");
-
       const type = entry.name.toLowerCase().endsWith(".png") ? "png" : "jpg";
-
       qrList.push({ iccId, buffer, type });
     }
 
-    setZipQrList(qrList);
+    qrList.sort((a, b) => a.iccId.localeCompare(b.iccId));
+    console.log("📦 ZIP entries found:", Object.keys(zip.files));
+    console.log("📦 Image files found:", qrList.length);
+    console.log(
+      "📦 qrList:",
+      qrList.map((q) => q.iccId),
+    );
+    _zipQrData = qrList; // ✅ module-level, instant, no async delay
+    setZipQrList(qrList); // for UI display only
+    console.log(
+      "✅ ZIP loaded:",
+      qrList.map((q) => q.iccId),
+    );
   }
-
   useEffect(() => {
     fetch("/data.csv")
       .then((r) => {
@@ -672,45 +744,94 @@ export default function KitDownload() {
     const qrX = (page2.getWidth() - qrSize) / 2;
 
     // White box behind QR
+    // page2.drawRectangle({
+    //   x: qrX - 10,
+    //   y: qrY - 40,
+    //   width: qrSize + 20,
+    //   height: qrSize + 100,
+    //   color: rgb(1, 1, 1),
+    // });
+    const boxX = qrX - 10;
+    const boxY = qrY - 40;
+    const boxW = qrSize + 20;
+    const boxH = qrSize + 100;
+
+    // White box
     page2.drawRectangle({
-      x: qrX - 10,
-      y: qrY - 40,
-      width: qrSize + 20,
-      height: qrSize + 100,
+      x: boxX,
+      y: boxY,
+      width: boxW,
+      height: boxH,
       color: rgb(1, 1, 1),
     });
 
-    // QR from CSV image path
+    // ── Static image — top-left corner of white box ──
+    const staticImg = await embedImage(pdfDoc, esimlogo); // your hardcoded import
+    if (staticImg) {
+      const staticSize = 30; // small, adjust as needed
+      page2.drawImage(staticImg, {
+        x: boxX + 15,
+        y: boxY + boxH - staticSize - 6, // top-left
+        width: staticSize,
+        height: staticSize,
+      });
+    }
+
+    // ── Uploaded logo — top-right corner of white box ──
+    // let logoImg = null;
+    // try {
+    //   if (logoFile instanceof File) {           // use logoFileTop for CsvOnly version
+    //     const buffer = await logoFile.arrayBuffer();
+    //     if (logoFile.type.includes("png")) {
+    //       logoImg = await pdfDoc.embedPng(buffer);
+    //     } else if (logoFile.type.includes("jpeg") || logoFile.type.includes("jpg")) {
+    //       logoImg = await pdfDoc.embedJpg(buffer);
+    //     }
+    //   } else {
+    //     logoImg = await embedImage(pdfDoc, "/images/logo.png");
+    //   }
+    // } catch (err) {
+    //   console.warn("Logo not found:", err);
+    // }
+
+    // if (logoImg) {
+    //   const logoH = 30; // small, adjust as needed
+    //   const dims = logoImg.scale(1);
+    //   const scale = logoH / dims.height;
+    //   const lw = dims.width * scale;
+    //   const lh = dims.height * scale;
+    //   page2.drawImage(logoImg, {
+    //     x: boxX + boxW - lw - 6,  // top-right, 6px padding from right edge
+    //     y: boxY + boxH - lh - 6,  // 6px padding from top edge
+    //     width: lw,
+    //     height: lh,
+    //   });
+    // }
+
+    // ── QR code ──
     let qrImage = null;
     try {
       let qrPath = qrSource;
-
-      console.log("Attempting to load QR from:", qrPath);
-
       if (qrPath && !qrPath.startsWith("http") && !qrPath.startsWith("/")) {
         qrPath = `/images/${qrPath}`;
       }
-
       qrImage = await embedImage(pdfDoc, qrPath);
-
-      if (!qrImage) {
-        console.error("QR image failed to load from path:", qrPath);
-      }
     } catch (err) {
-      console.error(
-        "QR image error (CSV only module):",
-        err,
-        "Path was:",
-        qrSource,
-      );
+      console.error("QR image error:", err);
     }
 
     if (qrImage) {
       const dims = qrImage.scale(1);
       const scale = qrSize / dims.width;
+      // page2.drawImage(qrImage, {
+      //   x: qrX,
+      //   y: qrY + 40,
+      //   width: dims.width * scale,
+      //   height: dims.height * scale,
+      // });
       page2.drawImage(qrImage, {
         x: qrX,
-        y: qrY + 40,
+        y: qrY + 10, // ✅ moved down
         width: dims.width * scale,
         height: dims.height * scale,
       });
@@ -724,7 +845,7 @@ export default function KitDownload() {
       });
     }
 
-    // Logo
+    // ── Uploaded logo — TOP RIGHT of white box ──
     let logoImg = null;
     try {
       if (logoFileTop instanceof File) {
@@ -741,19 +862,45 @@ export default function KitDownload() {
         logoImg = await embedImage(pdfDoc, "/images/logo.png");
       }
     } catch (err) {
-      console.warn("Logo not found (CSV only module):", err);
+      console.warn("Logo not found:", err);
     }
 
+    // if (logoImg) {
+    //   const dims = logoImg.scale(1);
+    //   const scale = 30 / dims.height;
+    //   const lw = dims.width * scale;
+    //   const lh = dims.height * scale;
+    //   page2.drawImage(logoImg, {
+    //     x: boxX + boxW - lw - 6,
+    //     y: boxY + boxH - lh - 6,
+    //     width: lw,
+    //     height: lh,
+    //   });
+    // }
+
+    // if (logoImg) {
+    //   const dims = logoImg.scale(1);
+    //   const scale = Math.min(100 / dims.width, 40 / dims.height);
+    //   const lw = dims.width * scale;
+    //   const lh = dims.height * scale;
+    //   const lx = (page2.getWidth() - lw) / 2;
+    //   const ly = qrY - 15;
+    //   page2.drawImage(logoImg, { x: lx, y: ly, width: lw, height: lh });
+    // }
+
+    // ✅ ADD THIS instead
     if (logoImg) {
       const dims = logoImg.scale(1);
-      const scale = Math.min(100 / dims.width, 40 / dims.height);
+      const scale = 30 / dims.height;
       const lw = dims.width * scale;
       const lh = dims.height * scale;
-      const lx = (page2.getWidth() - lw) / 2;
-      const ly = qrY - 15;
-      page2.drawImage(logoImg, { x: lx, y: ly, width: lw, height: lh });
+      page2.drawImage(logoImg, {
+        x: boxX + boxW - lw - 6,
+        y: boxY + boxH - lh - 6,
+        width: lw,
+        height: lh,
+      });
     }
-
     // ICC ID under logo
     const displayIccId = iccId || "N/A";
     const iccWidth = fontRegular.widthOfTextAtSize(displayIccId, 12);
@@ -1300,6 +1447,172 @@ export default function KitDownload() {
     });
 
     // ---------- PAGE 2 (similar sanitization applied throughout) ----------
+    // const page2 = pdfDoc.addPage(pageSize);
+    // page2.drawRectangle({
+    //   x: 0,
+    //   y: 0,
+    //   width: pageSize[0],
+    //   height: pageSize[1],
+    //   color: greenBg,
+    // });
+
+    // drawWrapped(
+    //   page2,
+    //   "Here is your very own personalized eSim Profile, scan and install in one click",
+    //   marginLeft,
+    //   760,
+    //   contentWidth,
+    //   16,
+    //   fontBold,
+    //   blue,
+    // );
+
+    // const qrSize = 150;
+    // const qrY = 450;
+    // const qrX = (page2.getWidth() - qrSize) / 2;
+
+    // page2.drawRectangle({
+    //   x: qrX - 10,
+    //   y: qrY - 40,
+    //   width: qrSize + 20,
+    //   height: qrSize + 100,
+    //   color: rgb(1, 1, 1),
+    // });
+
+    // let qrImage = null;
+
+    // try {
+    //   if (qrBuffer instanceof ArrayBuffer) {
+    //     qrImage =
+    //       qrType === "jpg"
+    //         ? await pdfDoc.embedJpg(qrBuffer)
+    //         : await pdfDoc.embedPng(qrBuffer);
+    //   } else {
+    //     let qrPath = vendorRow?.["qr_img"]?.trim();
+    //     if (qrPath && !qrPath.startsWith("http")) {
+    //       qrPath = `/images/${qrPath.split("/").pop()}`;
+    //     }
+    //     qrImage = await embedImage(pdfDoc, qrPath);
+    //   }
+    // } catch (err) {
+    //   console.warn("QR image failed:", err);
+    // }
+
+    // if (qrImage) {
+    //   const dims = qrImage.scale(1);
+    //   const scale = qrSize / dims.width;
+    //   page2.drawImage(qrImage, {
+    //     x: qrX,
+    //     y: qrY + 40,
+    //     width: dims.width * scale,
+    //     height: dims.height * scale,
+    //   });
+    // } else {
+    //   page2.drawText("QR CODE NOT FOUND", {
+    //     x: qrX + 10,
+    //     y: qrY + qrSize / 2 - 5,
+    //     size: 10,
+    //     font: fontBold,
+    //     color: rgb(1, 0, 0),
+    //   });
+    // }
+
+    // let logoImg = null;
+
+    // try {
+    //   if (logoFile instanceof File) {
+    //     const buffer = await logoFile.arrayBuffer();
+
+    //     if (logoFile.type.includes("png")) {
+    //       logoImg = await pdfDoc.embedPng(buffer);
+    //     } else if (
+    //       logoFile.type.includes("jpeg") ||
+    //       logoFile.type.includes("jpg")
+    //     ) {
+    //       logoImg = await pdfDoc.embedJpg(buffer);
+    //     }
+    //   } else {
+    //     logoImg = await embedImage(pdfDoc, "/images/logo.png");
+    //   }
+    // } catch (err) {
+    //   console.warn("Logo not found:", err);
+    // }
+
+    // if (logoImg) {
+    //   const dims = logoImg.scale(1);
+    //   const scale = Math.min(100 / dims.width, 40 / dims.height);
+    //   const lw = dims.width * scale;
+    //   const lh = dims.height * scale;
+    //   const lx = (page2.getWidth() - lw) / 2;
+    //   const ly = qrY - 15;
+    //   page2.drawImage(logoImg, { x: lx, y: ly, width: lw, height: lh });
+    // }
+
+    // const displayIccId = iccId || "N/A";
+    // const iccWidth = fontRegular.widthOfTextAtSize(displayIccId, 12);
+    // page2.drawText(displayIccId, {
+    //   x: qrX + qrSize / 2 - iccWidth / 2,
+    //   y: qrY - 60,
+    //   size: 12,
+    //   font: fontBold,
+    //   color: rgb(0, 0, 0),
+    // });
+
+    // drawWrapped(
+    //   page2,
+    //   "For Installation Support refer to the videos below:",
+    //   marginLeft,
+    //   qrY - 130,
+    //   contentWidth,
+    //   12,
+    //   fontRegular,
+    // );
+
+    // const appleImg = await embedImage(pdfDoc, appleImgSrc);
+    // const androidImg = await embedImage(pdfDoc, androidImgSrc);
+    // let supportY = qrY - 160;
+    // let cursorX = marginLeft;
+
+    // if (appleImg) {
+    //   const dims = appleImg.scale(1);
+    //   const sc = 12 / dims.width;
+    //   page2.drawImage(appleImg, {
+    //     x: cursorX,
+    //     y: supportY - 2,
+    //     width: dims.width * sc,
+    //     height: dims.height * sc,
+    //   });
+    //   cursorX += dims.width * sc + 8;
+    // }
+    // page2.drawText("Apple iOS: https://player.vimeo.com/video/1042080274", {
+    //   x: cursorX,
+    //   y: supportY,
+    //   size: 11,
+    //   font: fontRegular,
+    // });
+
+    // supportY -= 18;
+    // cursorX = marginLeft;
+
+    // if (androidImg) {
+    //   const dims = androidImg.scale(1);
+    //   const sc = 12 / dims.width;
+    //   page2.drawImage(androidImg, {
+    //     x: cursorX,
+    //     y: supportY - 2,
+    //     width: dims.width * sc,
+    //     height: dims.height * sc,
+    //   });
+    //   cursorX += dims.width * sc + 8;
+    // }
+    // page2.drawText("Android: https://player.vimeo.com/video/1042080269", {
+    //   x: cursorX,
+    //   y: supportY,
+    //   size: 11,
+    //   font: fontRegular,
+    // });
+
+    // ---------- PAGE 2 ----------
     const page2 = pdfDoc.addPage(pageSize);
     page2.drawRectangle({
       x: 0,
@@ -1324,16 +1637,67 @@ export default function KitDownload() {
     const qrY = 450;
     const qrX = (page2.getWidth() - qrSize) / 2;
 
+    const boxX = qrX - 10;
+    const boxY = qrY - 40;
+    const boxW = qrSize + 20;
+    const boxH = qrSize + 100;
+
+    // White box
     page2.drawRectangle({
-      x: qrX - 10,
-      y: qrY - 40,
-      width: qrSize + 20,
-      height: qrSize + 100,
+      x: boxX,
+      y: boxY,
+      width: boxW,
+      height: boxH,
       color: rgb(1, 1, 1),
     });
 
-    let qrImage = null;
+    // ── Static hardcoded image — TOP LEFT of white box ──
+    const staticImg = await embedImage(pdfDoc, esimlogo); // your imported 'image'
+    if (staticImg) {
+      page2.drawImage(staticImg, {
+        x: boxX + 16,
+        y: boxY + boxH - 36, // top-left corner
+        width: 30,
+        height: 30,
+      });
+    }
 
+    // ── Uploaded logo — TOP RIGHT of white box ──
+    // NOTE: use 'logoFileTop' instead of 'logoFile' in buildPdfBytesCsvOnly
+    let logoImg = null;
+    try {
+      if (logoFile instanceof File) {
+        const buffer = await logoFile.arrayBuffer();
+        if (logoFile.type.includes("png")) {
+          logoImg = await pdfDoc.embedPng(buffer);
+        } else if (
+          logoFile.type.includes("jpeg") ||
+          logoFile.type.includes("jpg")
+        ) {
+          logoImg = await pdfDoc.embedJpg(buffer);
+        }
+      } else {
+        logoImg = await embedImage(pdfDoc, "/images/logo.png");
+      }
+    } catch (err) {
+      console.warn("Logo not found:", err);
+    }
+
+    if (logoImg) {
+      const dims = logoImg.scale(1);
+      const scale = 30 / dims.height;
+      const lw = dims.width * scale;
+      const lh = dims.height * scale;
+      page2.drawImage(logoImg, {
+        x: boxX + boxW - lw - 6, // top-right corner
+        y: boxY + boxH - lh - 6,
+        width: lw,
+        height: lh,
+      });
+    }
+
+    // ── QR code — center ──
+    let qrImage = null;
     try {
       if (qrBuffer instanceof ArrayBuffer) {
         qrImage =
@@ -1354,9 +1718,15 @@ export default function KitDownload() {
     if (qrImage) {
       const dims = qrImage.scale(1);
       const scale = qrSize / dims.width;
+      // page2.drawImage(qrImage, {
+      //   x: qrX,
+      //   y: qrY + 40,
+      //   width: dims.width * scale,
+      //   height: dims.height * scale,
+      // });
       page2.drawImage(qrImage, {
         x: qrX,
-        y: qrY + 40,
+        y: qrY + 10, // ✅ moved down
         width: dims.width * scale,
         height: dims.height * scale,
       });
@@ -1370,37 +1740,7 @@ export default function KitDownload() {
       });
     }
 
-    let logoImg = null;
-
-    try {
-      if (logoFile instanceof File) {
-        const buffer = await logoFile.arrayBuffer();
-
-        if (logoFile.type.includes("png")) {
-          logoImg = await pdfDoc.embedPng(buffer);
-        } else if (
-          logoFile.type.includes("jpeg") ||
-          logoFile.type.includes("jpg")
-        ) {
-          logoImg = await pdfDoc.embedJpg(buffer);
-        }
-      } else {
-        logoImg = await embedImage(pdfDoc, "/images/logo.png");
-      }
-    } catch (err) {
-      console.warn("Logo not found:", err);
-    }
-
-    if (logoImg) {
-      const dims = logoImg.scale(1);
-      const scale = Math.min(100 / dims.width, 40 / dims.height);
-      const lw = dims.width * scale;
-      const lh = dims.height * scale;
-      const lx = (page2.getWidth() - lw) / 2;
-      const ly = qrY - 15;
-      page2.drawImage(logoImg, { x: lx, y: ly, width: lw, height: lh });
-    }
-
+    // ICC ID
     const displayIccId = iccId || "N/A";
     const iccWidth = fontRegular.widthOfTextAtSize(displayIccId, 12);
     page2.drawText(displayIccId, {
@@ -1411,6 +1751,7 @@ export default function KitDownload() {
       color: rgb(0, 0, 0),
     });
 
+    // Installation videos
     drawWrapped(
       page2,
       "For Installation Support refer to the videos below:",
@@ -1464,7 +1805,6 @@ export default function KitDownload() {
       size: 11,
       font: fontRegular,
     });
-
     // ---------- PAGE 3 ----------
     const page3 = pdfDoc.addPage(pageSize);
     page3.drawRectangle({
@@ -1781,8 +2121,10 @@ export default function KitDownload() {
         //   blob,
         //   url: URL.createObjectURL(blob),
         // });
+        // generated.push({
+        //   name: `${row.vendor_user_name || "Vendor"}_${qrData.iccId}.pdf`, // ✅ use qrData.iccId not row.icc_id
         generated.push({
-          name: `${row.vendor_user_name || "Vendor"}_${qrData.iccId}.pdf`, // ✅ use qrData.iccId not row.icc_id
+          name: `${row.vendor_user_name || "Vendor"}_${row.icc_id || "pdf"}.pdf`,
           blob,
           url: URL.createObjectURL(blob),
         });
@@ -1795,64 +2137,184 @@ export default function KitDownload() {
     }
   }
 
+  // async function handleGenerateAll() {
+  //   setLoading(true);
+
+  //   try {
+  //     const generated = [];
+
+  //     console.log("\n🚀 Starting PDF generation...");
+  //     console.log("Total CSV rows:", rows.length);
+  //     console.log("Total ZIP QR codes:", zipQrList.length);
+
+  //     for (let i = 0; i < rows.length; i++) {
+  //       const row = rows[i];
+
+  //       console.log(`\n📄 Processing row ${i + 1}: ${row.vendor_user_name}`);
+  //       console.log("   CSV ICC ID:", row.icc_id);
+
+  //       // ✅ FIX: Match QR by ICC ID instead of array index
+  //       // const qrData = zipQrList.find((qr) => qr.iccId === row.icc_id);
+  //       // Replace the qrData matching line:
+  //       // const qrData =
+  //       //   zipQrList.find((qr) => qr.iccId === row.icc_id) || zipQrList[i]; // fallback to position-based
+  //       const csvQrFilename = String(row.qr_img || "")
+  //         .trim()
+  //         .split("/")
+  //         .pop()
+  //         .replace(/\.(png|jpg|jpeg)$/i, "");
+
+  //       console.log("   CSV qr_img filename:", csvQrFilename);
+  //       console.log(
+  //         "   ZIP files available:",
+  //         zipQrList.map((q) => q.iccId),
+  //       );
+
+  //       const qrData =
+  //         zipQrList.find((qr) => qr.iccId.trim() === csvQrFilename) ||
+  //         zipQrList[i];
+  //       if (!qrData) {
+  //         console.warn(`⚠️ No QR found for row ${i + 1}`);
+  //         continue;
+  //       }
+  //       // if (!qrData) {
+  //       //   console.warn(`⚠️ No matching QR found for ICC: ${row.icc_id}`);
+  //       //   continue;
+  //       // }
+
+  //       console.log("   ✅ Matched with ZIP QR:", qrData.iccId);
+
+  //       const bytes = await buildPdfBytes(row, {
+  //         logoFile: uploadedLogo,
+  //         qrBuffer: qrData.buffer,
+  //         qrType: qrData.type,
+  //         iccFromZip: qrData.iccId, // This should match row.icc_id now
+  //       });
+
+  //       const blob = new Blob([bytes], { type: "application/pdf" });
+
+  //       generated.push({
+  //         name: `${row.vendor_user_name || "Vendor"}_${qrData.iccId}.pdf`, // ✅ qrData.iccId not row.icc_id
+  //         blob,
+  //         url: URL.createObjectURL(blob),
+  //       });
+  //     }
+
+  //     console.log(`\n✅ Generated ${generated.length} PDFs`);
+
+  //     setPdfList(generated);
+  //     setShowModal(true);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
+
+  // async function handleGenerateAll() {
+  //   setLoading(true);
+
+  //   try {
+  //     const generated = [];
+  //     const currentZipList = zipQrListRef.current; // ✅ READ FROM REF, not state
+
+  //     console.log("\n🚀 Starting PDF generation...");
+  //     console.log("Total CSV rows:", rows.length);
+  //     console.log("Total ZIP QR codes:", currentZipList.length);
+
+  //     if (currentZipList.length === 0) {
+  //       alert("ZIP QR codes not loaded. Please re-upload the ZIP file.");
+  //       return;
+  //     }
+
+  //     for (let i = 0; i < rows.length; i++) {
+  //       const row = rows[i];
+  //       console.log(`\n📄 Processing row ${i + 1}: ${row.vendor_user_name}`);
+
+  //       // ✅ Position-based matching (CSV row order = ZIP file order)
+  //       const qrData = currentZipList[i];
+
+  //       if (!qrData) {
+  //         console.warn(
+  //           `⚠️ No QR found for row ${i + 1} (only ${currentZipList.length} QR files)`,
+  //         );
+  //         continue;
+  //       }
+
+  //       console.log("   ✅ Using ZIP QR:", qrData.iccId);
+
+  //       const bytes = await buildPdfBytes(row, {
+  //         logoFile: uploadedLogo,
+  //         qrBuffer: qrData.buffer,
+  //         qrType: qrData.type,
+  //         iccFromZip: qrData.iccId,
+  //       });
+
+  //       const blob = new Blob([bytes], { type: "application/pdf" });
+  //       generated.push({
+  //         name: `${row.vendor_user_name || "Vendor"}_${qrData.iccId}.pdf`,
+  //         blob,
+  //         url: URL.createObjectURL(blob),
+  //       });
+  //     }
+
+  //     console.log(`\n✅ Generated ${generated.length} PDFs`);
+  //     setPdfList(generated);
+  //     setShowModal(true);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
+
   async function handleGenerateAll() {
     setLoading(true);
 
     try {
       const generated = [];
+      const currentZipList = _zipQrData; // ✅ always current, no stale state
 
       console.log("\n🚀 Starting PDF generation...");
       console.log("Total CSV rows:", rows.length);
-      console.log("Total ZIP QR codes:", zipQrList.length);
+      console.log("Total ZIP QR codes:", currentZipList.length);
+
+      if (currentZipList.length === 0) {
+        alert("ZIP QR codes not loaded. Please re-upload the ZIP file.");
+        return;
+      }
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
-
         console.log(`\n📄 Processing row ${i + 1}: ${row.vendor_user_name}`);
-        console.log("   CSV ICC ID:", row.icc_id);
 
-        // ✅ FIX: Match QR by ICC ID instead of array index
-        // const qrData = zipQrList.find((qr) => qr.iccId === row.icc_id);
-        // Replace the qrData matching line:
-        const qrData =
-          zipQrList.find((qr) => qr.iccId === row.icc_id) || zipQrList[i]; // fallback to position-based
+        const qrData = currentZipList[i];
 
         if (!qrData) {
           console.warn(`⚠️ No QR found for row ${i + 1}`);
           continue;
         }
-        // if (!qrData) {
-        //   console.warn(`⚠️ No matching QR found for ICC: ${row.icc_id}`);
-        //   continue;
-        // }
 
-        console.log("   ✅ Matched with ZIP QR:", qrData.iccId);
+        console.log("   ✅ Using ZIP QR:", qrData.iccId);
 
         const bytes = await buildPdfBytes(row, {
           logoFile: uploadedLogo,
           qrBuffer: qrData.buffer,
           qrType: qrData.type,
-          iccFromZip: qrData.iccId, // This should match row.icc_id now
+          iccFromZip: qrData.iccId,
         });
 
         const blob = new Blob([bytes], { type: "application/pdf" });
-
         generated.push({
-          name: `${row.vendor_user_name || "Vendor"}_${qrData.iccId}.pdf`, // ✅ qrData.iccId not row.icc_id
+          name: `${row.vendor_user_name || "Vendor"}_${qrData.iccId}.pdf`,
           blob,
           url: URL.createObjectURL(blob),
         });
       }
 
       console.log(`\n✅ Generated ${generated.length} PDFs`);
-
       setPdfList(generated);
       setShowModal(true);
     } finally {
       setLoading(false);
     }
   }
-
   async function handleDownloadAll() {
     if (!pdfList.length) return alert("No PDFs to download.");
 
@@ -1881,6 +2343,7 @@ export default function KitDownload() {
     setUploadedLogo(null);
     setUploadedZip(null);
     setLoading(false);
+    _zipQrData = []; // ✅ clear on reset
   }
 
   return (
