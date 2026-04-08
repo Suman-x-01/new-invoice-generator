@@ -14,16 +14,7 @@ import image2 from "../../public/PDFGeneratorImages/image2.png";
 import image3 from "../../public/PDFGeneratorImages/image3.png";
 import esimlogo from "../../public/PDFGeneratorImages/esim_logo.png";
 import JSZip from "jszip";
-// const zipQrListRef = useRef([]); // ✅ ADD THIS
-// const [zipQrList, setZipQrList] = useState([]);
-// ✅ HELPER: Sanitize text for PDF (remove non-WinAnsi chars but KEEP SPACES)
-// function sanitizeForPdf(text) {
-//   if (!text) return "";
-//   return String(text)
-//     .replace(/[^\x20-\x7E]/g, "") // Remove non-ASCII (but \x20 is space, so it stays!)
-//     .trim();
-// }
-// import { useRef } from "react";
+
 let _zipQrData = [];
 function sanitizeForPdf(text) {
   if (!text) return "";
@@ -82,10 +73,20 @@ function parseIccId(value) {
 }
 
 export default function KitDownload() {
+  // for top
   const csvTopRef = useRef(null);
   const logoTopRef = useRef(null);
   const zipQrListRef = useRef([]); // ✅ ADD HERE - inside component
 
+  // for middle (generated PDFs)
+
+  const csvBottomRef = useRef(null);
+  const logoBottomRef = useRef(null);
+  const zipBottomRef = useRef(null);
+
+  // for bottom (send emails)
+  const [uploadedEmailCsv, setUploadedEmailCsv] = useState(null);
+  const emailCsvRef = useRef(null);
   // without zip
   const [uploadedCsvTop, setUploadedCsvTop] = useState(null);
   const [uploadedLogoTop, setUploadedLogoTop] = useState(null);
@@ -101,65 +102,6 @@ export default function KitDownload() {
   const [loading, setLoading] = useState(false);
   const [uploadedCsv, setUploadedCsv] = useState(null);
   const [uploadedLogo, setUploadedLogo] = useState(null);
-
-  // async function handleZipUpload(e) {
-  //   const file = e.target.files[0];
-  //   if (!file) return;
-
-  //   setUploadedZip(file);
-
-  //   const zip = await JSZip.loadAsync(file);
-  //   const qrList = [];
-
-  //   for (const entry of Object.values(zip.files)) {
-  //     if (entry.dir) continue;
-  //     if (!entry.name.match(/\.(png|jpg|jpeg)$/i)) continue;
-
-  //     const buffer = await entry.async("arraybuffer");
-  //     const iccId = entry.name
-  //       .split("/")
-  //       .pop()
-  //       .replace(/\.(png|jpg|jpeg)$/i, "");
-
-  //     const type = entry.name.toLowerCase().endsWith(".png") ? "png" : "jpg";
-
-  //     qrList.push({ iccId, buffer, type });
-  //   }
-
-  //   setZipQrList(qrList);
-  // }
-  // async function handleZipUpload(e) {
-  //   const file = e.target.files[0];
-  //   if (!file) return;
-
-  //   setUploadedZip(file);
-
-  //   const zip = await JSZip.loadAsync(file);
-  //   const qrList = [];
-
-  //   for (const entry of Object.values(zip.files)) {
-  //     if (entry.dir) continue;
-  //     if (!entry.name.match(/\.(png|jpg|jpeg)$/i)) continue;
-
-  //     const buffer = await entry.async("arraybuffer");
-  //     const iccId = entry.name
-  //       .split("/")
-  //       .pop()
-  //       .replace(/\.(png|jpg|jpeg)$/i, "");
-  //     const type = entry.name.toLowerCase().endsWith(".png") ? "png" : "jpg";
-  //     qrList.push({ iccId, buffer, type });
-  //   }
-
-  //   // ✅ Sort by filename for consistent ordering
-  //   qrList.sort((a, b) => a.iccId.localeCompare(b.iccId));
-
-  //   // zipQrListRef.current = qrList; // ✅ SET REF immediately (no async delay)
-  //   setZipQrList(qrList); // ✅ also set state for UI display
-  //   console.log(
-  //     "✅ ZIP loaded:",
-  //     qrList.map((q) => q.iccId),
-  //   );
-  // }
 
   async function handleZipUpload(e) {
     const file = e.target.files[0];
@@ -215,120 +157,6 @@ export default function KitDownload() {
       );
   }, []);
 
-  // function parseCsv(text) {
-  //   // DEBUG - check raw text
-  //   const lines = text.split("\n");
-  //   console.log("🔍 RAW LINE 1 (header):", JSON.stringify(lines[0]));
-  //   console.log("🔍 RAW LINE 2 (first data):", JSON.stringify(lines[1]));
-  //   console.log("🔍 CHAR CODES of first name field:");
-
-  //   // Get first data value (first column of first row)
-  //   const firstValue = lines[1]?.split(/[\t,]/)[0] || "";
-  //   console.log(
-  //     [...firstValue].map((c) => `'${c}'=${c.charCodeAt(0)}`).join(", "),
-  //   );
-  //   // ✅ Normalize line endings and fix encoding issues
-  //   const normalized = text
-  //     .replace(/\r\n/g, "\n")
-  //     .replace(/\r/g, "\n")
-  //     .replace(/\u00A0/g, " ") // non-breaking space
-  //     .replace(/\u2019/g, "'") // smart quote
-  //     .replace(/\u2013/g, "-"); // en dash
-
-  //   const firstLine = normalized.split("\n")[0];
-  //   const delimiter = firstLine.includes("\t") ? "\t" : ",";
-
-  //   Papa.parse(normalized, {
-  //     // ✅ use normalized, not text
-  //     header: true,
-  //     skipEmptyLines: true,
-  //     delimiter: delimiter,
-  //     dynamicTyping: false,
-  //     transform: (value, field) => {
-  //       if (field === "icc_id" || field === "ICCID") {
-  //         return String(value).trim();
-  //       }
-  //       return String(value)
-  //         .replace(/\u00A0/g, " ")
-  //         .trim();
-  //     },
-  //     complete: (res) => {
-  //       const firstName = res.data[0]?.vendor_user_name || "";
-  //       console.log("🔍 RAW NAME:", JSON.stringify(firstName));
-  //       console.log(
-  //         "🔍 CHAR CODES:",
-  //         [...firstName].map((c) => `'${c}' = ${c.charCodeAt(0)}`),
-  //       );
-  //       // rest of your code...
-  //       if (!res?.data?.length) return;
-
-  //       console.log("📦 FULL RAW CSV DATA:", res.data);
-
-  //       const fixed = res.data.map((r, index) => {
-  //         // ✅ Get raw values BEFORE any processing
-  //         const rawVendorName = r.vendor_user_name || "";
-  //         const rawCompanyName = r.company_name || "";
-  //         const rawDatapack = r.datapack || "";
-  //         // const rawIcc = r.icc_id || r.ICCID || "";
-  //         const rawIcc = r.icc_id || r.ICCID || "";
-  //         console.log(`\n=== ROW ${index + 1}: ${rawVendorName} ===`);
-  //         console.log("Raw vendor name:", JSON.stringify(rawVendorName));
-  //         console.log("Raw ICC:", JSON.stringify(rawIcc));
-  //         console.log("ICC Type:", typeof rawIcc);
-  //         console.log("ICC Length:", rawIcc.length);
-
-  //         const qr = String(r.qr_img || "").trim();
-
-  //         // ✅ Process ICC ID - keep as string, no conversion
-  //         let icc = String(rawIcc).trim();
-
-  //         // Only parse if it has scientific notation
-  //         if (icc.includes("E") || icc.includes("e")) {
-  //           const original = icc;
-  //           icc = parseIccId(icc);
-  //           console.log(`Converted ${original} → ${icc}`);
-  //         } else {
-  //           console.log("ICC already in full format:", icc);
-  //         }
-
-  //         // Derive ICC from filename if missing
-  //         if (!icc && qr) {
-  //           icc = qr
-  //             .split("/")
-  //             .pop()
-  //             .replace(/\.(png|jpg|jpeg)$/i, "");
-  //         }
-
-  //         // ✅ Sanitize for PDF (should preserve spaces!)
-  //         const vendorName = sanitizeForPdf(rawVendorName);
-  //         const companyName = sanitizeForPdf(rawCompanyName);
-  //         const datapack = sanitizeForPdf(rawDatapack);
-
-  //         console.log("After sanitize vendor:", JSON.stringify(vendorName));
-  //         console.log("Vendor has spaces:", vendorName.includes(" "));
-  //         console.log("Final ICC:", JSON.stringify(icc));
-  //         console.log("---");
-
-  //         return {
-  //           ...r,
-  //           qr_img: qr,
-  //           icc_id: icc,
-  //           vendor_user_name: vendorName,
-  //           company_name: companyName,
-  //           datapack: datapack,
-  //         };
-  //       });
-
-  //       console.log("\n✅ FINAL PROCESSED ROWS:", fixed);
-  //       console.log("\n🔍 ICC IDs in order:");
-  //       fixed.forEach((row, i) => {
-  //         console.log(`${i + 1}. ${row.vendor_user_name}: ${row.icc_id}`);
-  //       });
-
-  //       setRows(fixed);
-  //     },
-  //   });
-  // }
   function parseCsv(text) {
     // ✅ Normalize line endings
     const normalized = text
@@ -541,10 +369,22 @@ export default function KitDownload() {
     // ✅ DON'T sanitize again - it's already sanitized from parseCsv
     const vendorName = vendorRow?.vendor_user_name || "Esteemed Traveler";
     const companyName = vendorRow?.company_name || "eSimNow.ai";
-    const iccId = vendorRow?.icc_id || "";
     const whatsapp = vendorRow?.whatsapp || "0000000000";
     const helpline = vendorRow?.helpline || "0000000000";
     const email = vendorRow?.email || "eSimNow.ai";
+
+    // ✅ FIX: Safe ICC ID extraction — handles scientific notation from CSV parsers
+    const iccId = (() => {
+      const raw = vendorRow?.icc_id;
+      if (raw == null || raw === "") return "";
+      const str = String(raw).trim();
+      if (/e/i.test(str)) {
+        // e.g. "8.93e+18" → "8930000000000000000" via BigInt
+        return BigInt(Math.round(Number(str))).toString();
+      }
+      return str;
+    })();
+
     console.log("   Final vendorName in PDF:", JSON.stringify(vendorName));
     console.log("   Has spaces:", vendorName.includes(" "));
     console.log("   Final iccId in PDF:", JSON.stringify(iccId));
@@ -553,8 +393,30 @@ export default function KitDownload() {
       vendorRow?.["qr_img"]?.trim() ||
       `/images/${vendorName.replace(/\s+/g, "_")}_qr.png`;
 
+    // ✅ EMBED LOGO ONCE — reused on page 1 and page 2
+    let logoImgEmbedded = null;
+    try {
+      if (logoFileTop instanceof File) {
+        const buffer = await logoFileTop.arrayBuffer();
+        if (logoFileTop.type.includes("png")) {
+          logoImgEmbedded = await pdfDoc.embedPng(buffer);
+        } else if (
+          logoFileTop.type.includes("jpeg") ||
+          logoFileTop.type.includes("jpg")
+        ) {
+          logoImgEmbedded = await pdfDoc.embedJpg(buffer);
+        }
+      } else {
+        logoImgEmbedded = await embedImage(pdfDoc, "/images/logo.png");
+      }
+    } catch (err) {
+      console.warn("Logo load failed:", err);
+    }
+
     // ---------- PAGE 1 ----------
     const page1 = pdfDoc.addPage(pageSize);
+
+    // ✅ BACKGROUND FIRST
     page1.drawRectangle({
       x: 0,
       y: 0,
@@ -563,30 +425,46 @@ export default function KitDownload() {
       color: yellowBg,
     });
 
+    // ✅ LOGO — centered at top
+    if (logoImgEmbedded) {
+      const dims = logoImgEmbedded.scale(1);
+      const maxWidth = 160;
+      const maxHeight = 80;
+      const scale = Math.min(maxWidth / dims.width, maxHeight / dims.height);
+      const lw = dims.width * scale;
+      const lh = dims.height * scale;
+      const centerX = (page1.getWidth() - lw) / 2;
+      const topY = page1.getHeight() - lh - 20;
+      page1.drawImage(logoImgEmbedded, {
+        x: centerX,
+        y: topY,
+        width: lw,
+        height: lh,
+      });
+    }
+
     page1.drawText("Welcome to the world of ESim powered by", {
       x: marginLeft,
-      y: 760,
+      y: 720,
       size: 24,
       font: fontBold,
       color: blue,
     });
-
     page1.drawText(companyName, {
       x: marginLeft,
-      y: 724,
+      y: 690,
       size: 24,
       font: fontBold,
       color: blue,
     });
-
     page1.drawText(`Dear ${vendorName},`, {
       x: marginLeft,
-      y: 684,
+      y: 654,
       size: 14,
       font: fontBold,
     });
 
-    let yPos = 656;
+    let yPos = 626;
     drawWrapped(
       page1,
       "We are delighted to welcome you to eSimNow.ai! The world's leading eSim Marketplace.",
@@ -598,38 +476,6 @@ export default function KitDownload() {
     );
     yPos -= 36;
 
-    // function drawInlineBoldParagraph(
-    //   page,
-    //   x,
-    //   y,
-    //   contentParts,
-    //   maxWidth,
-    //   fontSize,
-    // ) {
-    //   let cursorX = x,
-    //     cursorY = y;
-
-    //   for (const part of contentParts) {
-    //     const font = part.bold ? fontBold : fontRegular;
-    //     // ✅ Sanitize each part
-    //     const sanitized = sanitizeForPdf(part.text);
-    //     for (const word of sanitized.split(" ")) {
-    //       const wordWidth = font.widthOfTextAtSize(word + " ", fontSize);
-    //       if (cursorX + wordWidth > x + maxWidth) {
-    //         cursorX = x;
-    //         cursorY -= fontSize + 4;
-    //       }
-    //       page.drawText(word + " ", {
-    //         x: cursorX,
-    //         y: cursorY,
-    //         size: fontSize,
-    //         font,
-    //       });
-    //       cursorX += wordWidth;
-    //     }
-    //   }
-    //   return cursorY;
-    // }
     function drawInlineBoldParagraph(
       page,
       x,
@@ -643,9 +489,7 @@ export default function KitDownload() {
       for (const part of contentParts) {
         const font = part.bold ? fontBold : fontRegular;
         const sanitized = sanitizeForPdf(part.text);
-        // Split on single space, filter empty strings to avoid double-space issues
-        const words = sanitized.split(" ").filter((w) => w.length > 0);
-        for (const word of words) {
+        for (const word of sanitized.split(" ")) {
           const wordWidth = font.widthOfTextAtSize(word + " ", fontSize);
           if (cursorX + wordWidth > x + maxWidth) {
             cursorX = x;
@@ -662,6 +506,7 @@ export default function KitDownload() {
       }
       return cursorY;
     }
+
     const inlineParts = [
       { text: "With your ", bold: false },
       { text: "180 countries, ", bold: true },
@@ -670,7 +515,6 @@ export default function KitDownload() {
         bold: false,
       },
     ];
-
     yPos = drawInlineBoldParagraph(
       page1,
       marginLeft,
@@ -691,7 +535,6 @@ export default function KitDownload() {
       fontRegular,
     );
     yPos -= 48;
-
     drawWrapped(
       page1,
       "We wish you a pleasant journey and seamless digital experience.",
@@ -702,7 +545,6 @@ export default function KitDownload() {
       fontRegular,
     );
     yPos -= 48;
-
     page1.drawText("Warm Regards,", {
       x: marginLeft,
       y: yPos,
@@ -710,7 +552,6 @@ export default function KitDownload() {
       font: fontRegular,
     });
     yPos -= 18;
-
     page1.drawText(companyName, {
       x: marginLeft,
       y: yPos,
@@ -743,14 +584,6 @@ export default function KitDownload() {
     const qrY = 450;
     const qrX = (page2.getWidth() - qrSize) / 2;
 
-    // White box behind QR
-    // page2.drawRectangle({
-    //   x: qrX - 10,
-    //   y: qrY - 40,
-    //   width: qrSize + 20,
-    //   height: qrSize + 100,
-    //   color: rgb(1, 1, 1),
-    // });
     const boxX = qrX - 10;
     const boxY = qrY - 40;
     const boxW = qrSize + 20;
@@ -765,50 +598,22 @@ export default function KitDownload() {
       color: rgb(1, 1, 1),
     });
 
-    // ── Static image — top-left corner of white box ──
-    const staticImg = await embedImage(pdfDoc, esimlogo); // your hardcoded import
-    if (staticImg) {
-      const staticSize = 30; // small, adjust as needed
-      page2.drawImage(staticImg, {
-        x: boxX + 15,
-        y: boxY + boxH - staticSize - 6, // top-left
-        width: staticSize,
-        height: staticSize,
+    // ── Uploaded logo — TOP CENTER inside white box ──
+    if (logoImgEmbedded) {
+      const dims = logoImgEmbedded.scale(1);
+      const maxSize = 80;
+      const scale = Math.min(maxSize / dims.width, maxSize / dims.height);
+      const lw = dims.width * scale;
+      const lh = dims.height * scale;
+      page2.drawImage(logoImgEmbedded, {
+        x: boxX + (boxW - lw) / 2, // ✅ centered horizontally
+        y: boxY + boxH - lh - 6, // ✅ top of white box
+        width: lw,
+        height: lh,
       });
     }
 
-    // ── Uploaded logo — top-right corner of white box ──
-    // let logoImg = null;
-    // try {
-    //   if (logoFile instanceof File) {           // use logoFileTop for CsvOnly version
-    //     const buffer = await logoFile.arrayBuffer();
-    //     if (logoFile.type.includes("png")) {
-    //       logoImg = await pdfDoc.embedPng(buffer);
-    //     } else if (logoFile.type.includes("jpeg") || logoFile.type.includes("jpg")) {
-    //       logoImg = await pdfDoc.embedJpg(buffer);
-    //     }
-    //   } else {
-    //     logoImg = await embedImage(pdfDoc, "/images/logo.png");
-    //   }
-    // } catch (err) {
-    //   console.warn("Logo not found:", err);
-    // }
-
-    // if (logoImg) {
-    //   const logoH = 30; // small, adjust as needed
-    //   const dims = logoImg.scale(1);
-    //   const scale = logoH / dims.height;
-    //   const lw = dims.width * scale;
-    //   const lh = dims.height * scale;
-    //   page2.drawImage(logoImg, {
-    //     x: boxX + boxW - lw - 6,  // top-right, 6px padding from right edge
-    //     y: boxY + boxH - lh - 6,  // 6px padding from top edge
-    //     width: lw,
-    //     height: lh,
-    //   });
-    // }
-
-    // ── QR code ──
+    // ── QR code — center ──
     let qrImage = null;
     try {
       let qrPath = qrSource;
@@ -823,15 +628,9 @@ export default function KitDownload() {
     if (qrImage) {
       const dims = qrImage.scale(1);
       const scale = qrSize / dims.width;
-      // page2.drawImage(qrImage, {
-      //   x: qrX,
-      //   y: qrY + 40,
-      //   width: dims.width * scale,
-      //   height: dims.height * scale,
-      // });
       page2.drawImage(qrImage, {
         x: qrX,
-        y: qrY + 10, // ✅ moved down
+        y: qrY + 10,
         width: dims.width * scale,
         height: dims.height * scale,
       });
@@ -845,63 +644,23 @@ export default function KitDownload() {
       });
     }
 
-    // ── Uploaded logo — TOP RIGHT of white box ──
-    let logoImg = null;
-    try {
-      if (logoFileTop instanceof File) {
-        const buffer = await logoFileTop.arrayBuffer();
-        if (logoFileTop.type.includes("png")) {
-          logoImg = await pdfDoc.embedPng(buffer);
-        } else if (
-          logoFileTop.type.includes("jpeg") ||
-          logoFileTop.type.includes("jpg")
-        ) {
-          logoImg = await pdfDoc.embedJpg(buffer);
-        }
-      } else {
-        logoImg = await embedImage(pdfDoc, "/images/logo.png");
-      }
-    } catch (err) {
-      console.warn("Logo not found:", err);
-    }
-
-    // if (logoImg) {
-    //   const dims = logoImg.scale(1);
-    //   const scale = 30 / dims.height;
-    //   const lw = dims.width * scale;
-    //   const lh = dims.height * scale;
-    //   page2.drawImage(logoImg, {
-    //     x: boxX + boxW - lw - 6,
-    //     y: boxY + boxH - lh - 6,
-    //     width: lw,
-    //     height: lh,
-    //   });
-    // }
-
-    // if (logoImg) {
-    //   const dims = logoImg.scale(1);
-    //   const scale = Math.min(100 / dims.width, 40 / dims.height);
-    //   const lw = dims.width * scale;
-    //   const lh = dims.height * scale;
-    //   const lx = (page2.getWidth() - lw) / 2;
-    //   const ly = qrY - 15;
-    //   page2.drawImage(logoImg, { x: lx, y: ly, width: lw, height: lh });
-    // }
-
-    // ✅ ADD THIS instead
-    if (logoImg) {
-      const dims = logoImg.scale(1);
-      const scale = 30 / dims.height;
-      const lw = dims.width * scale;
-      const lh = dims.height * scale;
-      page2.drawImage(logoImg, {
-        x: boxX + boxW - lw - 6,
-        y: boxY + boxH - lh - 6,
-        width: lw,
-        height: lh,
+    // ── Static esimlogo — BOTTOM CENTER inside white box ──
+    const staticImg = await embedImage(pdfDoc, esimlogo);
+    if (staticImg) {
+      const dims = staticImg.scale(1);
+      const maxSize = 80;
+      const scale = Math.min(maxSize / dims.width, maxSize / dims.height);
+      const sw = dims.width * scale;
+      const sh = dims.height * scale;
+      page2.drawImage(staticImg, {
+        x: boxX + (boxW - sw) / 2, // ✅ centered horizontally
+        y: boxY + 6, // ✅ bottom of white box
+        width: sw,
+        height: sh,
       });
     }
-    // ICC ID under logo
+
+    // ── ICC ID — centered below white box ──
     const displayIccId = iccId || "N/A";
     const iccWidth = fontRegular.widthOfTextAtSize(displayIccId, 12);
     page2.drawText(displayIccId, {
@@ -912,7 +671,7 @@ export default function KitDownload() {
       color: rgb(0, 0, 0),
     });
 
-    // Installation videos
+    // ── Installation videos ──
     drawWrapped(
       page2,
       "For Installation Support refer to the videos below:",
@@ -940,7 +699,6 @@ export default function KitDownload() {
       });
       cursorX += dims.width * sc + 8;
     }
-
     page2.drawText("Apple iOS: https://player.vimeo.com/video/1042080274", {
       x: cursorX,
       y: supportY,
@@ -962,7 +720,6 @@ export default function KitDownload() {
       });
       cursorX += dims.width * sc + 8;
     }
-
     page2.drawText("Android: https://player.vimeo.com/video/1042080269", {
       x: cursorX,
       y: supportY,
@@ -1004,7 +761,6 @@ export default function KitDownload() {
       11,
       fontRegular,
     );
-
     drawWrapped(
       page3,
       "2. To check whether your Android phone is eSim compatible dial *#06#",
@@ -1136,7 +892,6 @@ export default function KitDownload() {
       fontRegular,
     );
     y4 -= 22;
-
     drawWrapped(
       page4,
       `WhatsApp: ${whatsapp}`,
@@ -1147,7 +902,6 @@ export default function KitDownload() {
       fontRegular,
     );
     y4 -= 22;
-
     drawWrapped(
       page4,
       `Email: ${email}`,
@@ -1167,10 +921,8 @@ export default function KitDownload() {
       color: blue,
     });
 
-    // ✅ Sanitize datapack
     const dataPackText =
       vendorRow?.datapack || "1 GB data valid for 7 days from activation";
-
     const bullets = [
       dataPackText,
       "Use WiFi when available to save data",
@@ -1198,7 +950,6 @@ export default function KitDownload() {
     const footerSize = 36;
     const footerWidth = fontBold.widthOfTextAtSize(footerText, footerSize);
     const footerX = (pageSize[0] - footerWidth) / 2;
-
     page4.drawText(footerText, {
       x: footerX,
       y: 150,
@@ -1206,70 +957,8 @@ export default function KitDownload() {
       font: fontBold,
     });
 
-    const socialIcons = [
-      {
-        url: "https://www.eSimNow.ai",
-        icon: "https://cdn-icons-png.flaticon.com/512/841/841364.png",
-      },
-      {
-        url: "https://www.facebook.com/eSimNow.ai",
-        icon: "https://cdn-icons-png.flaticon.com/512/733/733547.png",
-      },
-      {
-        url: "https://www.instagram.com/eSimNow.ai",
-        icon: "https://cdn-icons-png.flaticon.com/512/2111/2111463.png",
-      },
-      {
-        url: "https://www.linkedin.com/company/esimnow",
-        icon: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
-      },
-      {
-        url: "https://x.com/eSimNow",
-        icon: "https://cdn-icons-png.flaticon.com/512/5969/5969020.png",
-      },
-    ];
-
-    const iconSize = 32;
-    const spacing = 20;
-    const totalWidthIcons = socialIcons.length * (iconSize + spacing) - spacing;
-    let iconStartX = (pageSize[0] - totalWidthIcons) / 2;
-    const iconY = 80;
-    const annots = [];
-
-    for (const s of socialIcons) {
-      const resp = await fetch(s.icon);
-      const bytes = await resp.arrayBuffer();
-      const img = await pdfDoc.embedPng(bytes);
-
-      page4.drawImage(img, {
-        x: iconStartX,
-        y: iconY,
-        width: iconSize,
-        height: iconSize,
-      });
-
-      const annotRef = pdfDoc.context.register(
-        pdfDoc.context.obj({
-          Type: "Annot",
-          Subtype: "Link",
-          Rect: [iconStartX, iconY, iconStartX + iconSize, iconY + iconSize],
-          Border: [0, 0, 0],
-          A: pdfDoc.context.obj({ Type: "Action", S: "URI", URI: s.url }),
-        }),
-      );
-
-      annots.push(annotRef);
-      iconStartX += iconSize + spacing;
-    }
-
-    const pageAnnots =
-      page4.node.lookup(PDFName.of("Annots")) || pdfDoc.context.obj([]);
-    annots.forEach((a) => pageAnnots.push(a));
-    page4.node.set(PDFName.of("Annots"), pageAnnots);
-
     return await pdfDoc.save();
   }
-
   async function buildPdfBytes(vendorRow, options = {}) {
     const {
       logoFile = null,
@@ -1321,9 +1010,7 @@ export default function KitDownload() {
       vendorRow?.["qr_img"]?.trim() ||
       `/images/${vendorName.replace(/\s+/g, "_")}_qr.png`;
 
-    // ---------- PAGE 1 ----------
-    const page1 = pdfDoc.addPage(pageSize);
-    // ✅ CENTER LOGO ON PAGE 1
+    // ✅ CREATE LOGO IMAGE FIRST
     let logoImgPage1 = null;
 
     try {
@@ -1338,35 +1025,17 @@ export default function KitDownload() {
         ) {
           logoImgPage1 = await pdfDoc.embedJpg(buffer);
         }
+      } else {
+        // fallback (optional)
+        logoImgPage1 = await embedImage(pdfDoc, "/images/logo.png");
       }
     } catch (err) {
-      console.warn("Page1 logo load failed:", err);
+      console.warn("Page1 Logo load failed:", err);
     }
+    // ---------- PAGE 1 ----------
+    const page1 = pdfDoc.addPage(pageSize);
 
-    if (logoImgPage1) {
-      const dims = logoImgPage1.scale(1);
-
-      // 🔥 control size
-      const maxWidth = 200;
-      const maxHeight = 120;
-
-      const scale = Math.min(maxWidth / dims.width, maxHeight / dims.height);
-
-      const lw = dims.width * scale;
-      const lh = dims.height * scale;
-
-      // ✅ CENTER POSITION
-      const centerX = (page1.getWidth() - lw) / 2;
-      const centerY = (page1.getHeight() - lh) / 2 + 100;
-      // +100 = move slightly up (adjust if needed)
-
-      page1.drawImage(logoImgPage1, {
-        x: centerX,
-        y: centerY,
-        width: lw,
-        height: lh,
-      });
-    }
+    // ✅ BACKGROUND FIRST
     page1.drawRectangle({
       x: 0,
       y: 0,
@@ -1374,28 +1043,83 @@ export default function KitDownload() {
       height: pageSize[1],
       color: yellowBg,
     });
+
+    // ✅ THEN LOGO
+    // if (logoImgPage1) {
+    //   const dims = logoImgPage1.scale(1);
+
+    //   const maxWidth = 200;
+    //   const maxHeight = 120;
+
+    //   const scale = Math.min(maxWidth / dims.width, maxHeight / dims.height);
+
+    //   const lw = dims.width * scale;
+    //   const lh = dims.height * scale;
+
+    //   const centerX = (page1.getWidth() - lw) / 2;
+    //   const centerY = (page1.getHeight() - lh) / 2 + 100;
+
+    //   page1.drawImage(logoImgPage1, {
+    //     x: centerX,
+    //     y: centerY,
+    //     width: lw,
+    //     height: lh,
+    //   });
+    // }
+
+    if (logoImgPage1) {
+      const dims = logoImgPage1.scale(1);
+
+      const maxWidth = 160;
+      const maxHeight = 80;
+
+      const scale = Math.min(maxWidth / dims.width, maxHeight / dims.height);
+
+      const lw = dims.width * scale;
+      const lh = dims.height * scale;
+
+      // ✅ CENTER horizontally
+      const centerX = (page1.getWidth() - lw) / 2;
+
+      // ✅ PLACE AT TOP (HEADER AREA)
+      const topY = page1.getHeight() - lh - 20; // 20 = top padding
+
+      page1.drawImage(logoImgPage1, {
+        x: centerX,
+        y: topY,
+        width: lw,
+        height: lh,
+      });
+    }
+    // page1.drawRectangle({
+    //   x: 0,
+    //   y: 0,
+    //   width: pageSize[0],
+    //   height: pageSize[1],
+    //   color: yellowBg,
+    // });
     page1.drawText("Welcome to the world of ESim powered by", {
       x: marginLeft,
-      y: 760,
+      y: 720,
       size: 24,
       font: fontBold,
       color: blue,
     });
     page1.drawText(companyName, {
       x: marginLeft,
-      y: 724,
+      y: 690,
       size: 24,
       font: fontBold,
       color: blue,
     });
     page1.drawText(`Dear ${vendorName},`, {
       x: marginLeft,
-      y: 684,
+      y: 654,
       size: 14,
       font: fontBold,
     });
 
-    let yPos = 656;
+    let yPos = 626;
     drawWrapped(
       page1,
       "We are delighted to welcome you to eSimNow.ai! The world's leading eSim Marketplace.",
@@ -1490,173 +1214,7 @@ export default function KitDownload() {
       font: fontBold,
     });
 
-    // ---------- PAGE 2 (similar sanitization applied throughout) ----------
-    // const page2 = pdfDoc.addPage(pageSize);
-    // page2.drawRectangle({
-    //   x: 0,
-    //   y: 0,
-    //   width: pageSize[0],
-    //   height: pageSize[1],
-    //   color: greenBg,
-    // });
-
-    // drawWrapped(
-    //   page2,
-    //   "Here is your very own personalized eSim Profile, scan and install in one click",
-    //   marginLeft,
-    //   760,
-    //   contentWidth,
-    //   16,
-    //   fontBold,
-    //   blue,
-    // );
-
-    // const qrSize = 150;
-    // const qrY = 450;
-    // const qrX = (page2.getWidth() - qrSize) / 2;
-
-    // page2.drawRectangle({
-    //   x: qrX - 10,
-    //   y: qrY - 40,
-    //   width: qrSize + 20,
-    //   height: qrSize + 100,
-    //   color: rgb(1, 1, 1),
-    // });
-
-    // let qrImage = null;
-
-    // try {
-    //   if (qrBuffer instanceof ArrayBuffer) {
-    //     qrImage =
-    //       qrType === "jpg"
-    //         ? await pdfDoc.embedJpg(qrBuffer)
-    //         : await pdfDoc.embedPng(qrBuffer);
-    //   } else {
-    //     let qrPath = vendorRow?.["qr_img"]?.trim();
-    //     if (qrPath && !qrPath.startsWith("http")) {
-    //       qrPath = `/images/${qrPath.split("/").pop()}`;
-    //     }
-    //     qrImage = await embedImage(pdfDoc, qrPath);
-    //   }
-    // } catch (err) {
-    //   console.warn("QR image failed:", err);
-    // }
-
-    // if (qrImage) {
-    //   const dims = qrImage.scale(1);
-    //   const scale = qrSize / dims.width;
-    //   page2.drawImage(qrImage, {
-    //     x: qrX,
-    //     y: qrY + 40,
-    //     width: dims.width * scale,
-    //     height: dims.height * scale,
-    //   });
-    // } else {
-    //   page2.drawText("QR CODE NOT FOUND", {
-    //     x: qrX + 10,
-    //     y: qrY + qrSize / 2 - 5,
-    //     size: 10,
-    //     font: fontBold,
-    //     color: rgb(1, 0, 0),
-    //   });
-    // }
-
-    // let logoImg = null;
-
-    // try {
-    //   if (logoFile instanceof File) {
-    //     const buffer = await logoFile.arrayBuffer();
-
-    //     if (logoFile.type.includes("png")) {
-    //       logoImg = await pdfDoc.embedPng(buffer);
-    //     } else if (
-    //       logoFile.type.includes("jpeg") ||
-    //       logoFile.type.includes("jpg")
-    //     ) {
-    //       logoImg = await pdfDoc.embedJpg(buffer);
-    //     }
-    //   } else {
-    //     logoImg = await embedImage(pdfDoc, "/images/logo.png");
-    //   }
-    // } catch (err) {
-    //   console.warn("Logo not found:", err);
-    // }
-
-    // if (logoImg) {
-    //   const dims = logoImg.scale(1);
-    //   const scale = Math.min(100 / dims.width, 40 / dims.height);
-    //   const lw = dims.width * scale;
-    //   const lh = dims.height * scale;
-    //   const lx = (page2.getWidth() - lw) / 2;
-    //   const ly = qrY - 15;
-    //   page2.drawImage(logoImg, { x: lx, y: ly, width: lw, height: lh });
-    // }
-
-    // const displayIccId = iccId || "N/A";
-    // const iccWidth = fontRegular.widthOfTextAtSize(displayIccId, 12);
-    // page2.drawText(displayIccId, {
-    //   x: qrX + qrSize / 2 - iccWidth / 2,
-    //   y: qrY - 60,
-    //   size: 12,
-    //   font: fontBold,
-    //   color: rgb(0, 0, 0),
-    // });
-
-    // drawWrapped(
-    //   page2,
-    //   "For Installation Support refer to the videos below:",
-    //   marginLeft,
-    //   qrY - 130,
-    //   contentWidth,
-    //   12,
-    //   fontRegular,
-    // );
-
-    // const appleImg = await embedImage(pdfDoc, appleImgSrc);
-    // const androidImg = await embedImage(pdfDoc, androidImgSrc);
-    // let supportY = qrY - 160;
-    // let cursorX = marginLeft;
-
-    // if (appleImg) {
-    //   const dims = appleImg.scale(1);
-    //   const sc = 12 / dims.width;
-    //   page2.drawImage(appleImg, {
-    //     x: cursorX,
-    //     y: supportY - 2,
-    //     width: dims.width * sc,
-    //     height: dims.height * sc,
-    //   });
-    //   cursorX += dims.width * sc + 8;
-    // }
-    // page2.drawText("Apple iOS: https://player.vimeo.com/video/1042080274", {
-    //   x: cursorX,
-    //   y: supportY,
-    //   size: 11,
-    //   font: fontRegular,
-    // });
-
-    // supportY -= 18;
-    // cursorX = marginLeft;
-
-    // if (androidImg) {
-    //   const dims = androidImg.scale(1);
-    //   const sc = 12 / dims.width;
-    //   page2.drawImage(androidImg, {
-    //     x: cursorX,
-    //     y: supportY - 2,
-    //     width: dims.width * sc,
-    //     height: dims.height * sc,
-    //   });
-    //   cursorX += dims.width * sc + 8;
-    // }
-    // page2.drawText("Android: https://player.vimeo.com/video/1042080269", {
-    //   x: cursorX,
-    //   y: supportY,
-    //   size: 11,
-    //   font: fontRegular,
-    // });
-
-    // ---------- PAGE 2 ----------
+    // page 2-----------------------
     const page2 = pdfDoc.addPage(pageSize);
     page2.drawRectangle({
       x: 0,
@@ -1696,104 +1254,6 @@ export default function KitDownload() {
     });
 
     // !==========================
-
-    // // ── Static hardcoded image — TOP LEFT of white box ──
-    // const staticImg = await embedImage(pdfDoc, esimlogo); // your imported 'image'
-    // if (staticImg) {
-    //   page2.drawImage(staticImg, {
-    //     x: boxX + 16,
-    //     y: boxY + boxH - 36, // top-left corner
-    //     width: 30,
-    //     height: 30,
-    //   });
-    // }
-
-    // // ── Uploaded logo — TOP RIGHT of white box ──
-    // // NOTE: use 'logoFileTop' instead of 'logoFile' in buildPdfBytesCsvOnly
-    // let logoImg = null;
-    // try {
-    //   if (logoFile instanceof File) {
-    //     const buffer = await logoFile.arrayBuffer();
-    //     if (logoFile.type.includes("png")) {
-    //       logoImg = await pdfDoc.embedPng(buffer);
-    //     } else if (
-    //       logoFile.type.includes("jpeg") ||
-    //       logoFile.type.includes("jpg")
-    //     ) {
-    //       logoImg = await pdfDoc.embedJpg(buffer);
-    //     }
-    //   } else {
-    //     logoImg = await embedImage(pdfDoc, "/images/logo.png");
-    //   }
-    // } catch (err) {
-    //   console.warn("Logo not found:", err);
-    // }
-
-    // if (logoImg) {
-    //   const dims = logoImg.scale(1);
-    //   const scale = 30 / dims.height;
-    //   const lw = dims.width * scale;
-    //   const lh = dims.height * scale;
-    //   page2.drawImage(logoImg, {
-    //     x: boxX + boxW - lw - 6, // top-right corner
-    //     y: boxY + boxH - lh - 6,
-    //     width: lw,
-    //     height: lh,
-    //   });
-    // }
-
-    // !====================
-
-    // ── Static hardcoded image — TOP LEFT of white box ──
-    // const staticImg = await embedImage(pdfDoc, esimlogo);
-    // if (staticImg) {
-    //   const dims = staticImg.scale(1);
-    //   const maxSize = 80;
-    //   const scale = Math.min(maxSize / dims.width, maxSize / dims.height);
-    //   const sw = dims.width * scale;
-    //   const sh = dims.height * scale;
-    //   page2.drawImage(staticImg, {
-    //     x: boxX + 6,
-    //     y: boxY + boxH - sh - 6,
-    //     width: sw,
-    //     height: sh,
-    //   });
-    // }
-
-    // ── Uploaded logo — TOP RIGHT of white box ──
-    // let logoImg = null;
-    // try {
-    //   if (logoFile instanceof File) {
-    //     // use logoFileTop in buildPdfBytesCsvOnly
-    //     const buffer = await logoFile.arrayBuffer();
-    //     if (logoFile.type.includes("png")) {
-    //       logoImg = await pdfDoc.embedPng(buffer);
-    //     } else if (
-    //       logoFile.type.includes("jpeg") ||
-    //       logoFile.type.includes("jpg")
-    //     ) {
-    //       logoImg = await pdfDoc.embedJpg(buffer);
-    //     }
-    //   } else {
-    //     logoImg = await embedImage(pdfDoc, "/images/logo.png");
-    //   }
-    // } catch (err) {
-    //   console.warn("Logo not found:", err);
-    // }
-
-    // if (logoImg) {
-    //   const dims = logoImg.scale(1);
-    //   const maxSize = 80;
-    //   const scale = Math.min(maxSize / dims.width, maxSize / dims.height);
-    //   const lw = dims.width * scale;
-    //   const lh = dims.height * scale;
-    //   page2.drawImage(logoImg, {
-    //     x: boxX + boxW - lw - 6,
-    //     y: boxY + boxH - lh - 6,
-    //     width: lw,
-    //     height: lh,
-    //   });
-    // }
 
     // ── Uploaded logo — TOP CENTER above QR ──
     let logoImg = null;
@@ -2199,61 +1659,6 @@ export default function KitDownload() {
       font: fontBold,
     });
 
-    // const socialIcons = [
-    //   {
-    //     url: "https://www.eSimNow.ai",
-    //     icon: "https://cdn-icons-png.flaticon.com/512/841/841364.png",
-    //   },
-    //   {
-    //     url: "https://www.facebook.com/eSimNow.ai",
-    //     icon: "https://cdn-icons-png.flaticon.com/512/733/733547.png",
-    //   },
-    //   {
-    //     url: "https://www.instagram.com/eSimNow.ai",
-    //     icon: "https://cdn-icons-png.flaticon.com/512/2111/2111463.png",
-    //   },
-    //   {
-    //     url: "https://www.linkedin.com/company/esimnow",
-    //     icon: "https://cdn-icons-png.flaticon.com/512/174/174857.png",
-    //   },
-    //   {
-    //     url: "https://x.com/eSimNow",
-    //     icon: "https://cdn-icons-png.flaticon.com/512/5969/5969020.png",
-    //   },
-    // ];
-    // const iconSize = 32;
-    // const spacing = 20;
-    // const totalWidth = socialIcons.length * (iconSize + spacing) - spacing;
-    // let iconStartX = (pageSize[0] - totalWidth) / 2;
-    // const iconY = 80;
-    // const annots = [];
-    // for (const s of socialIcons) {
-    //   const resp = await fetch(s.icon);
-    //   const bytes = await resp.arrayBuffer();
-    //   const img = await pdfDoc.embedPng(bytes);
-    //   page4.drawImage(img, {
-    //     x: iconStartX,
-    //     y: iconY,
-    //     width: iconSize,
-    //     height: iconSize,
-    //   });
-    //   const annotRef = pdfDoc.context.register(
-    //     pdfDoc.context.obj({
-    //       Type: "Annot",
-    //       Subtype: "Link",
-    //       Rect: [iconStartX, iconY, iconStartX + iconSize, iconY + iconSize],
-    //       Border: [0, 0, 0],
-    //       A: pdfDoc.context.obj({ Type: "Action", S: "URI", URI: s.url }),
-    //     }),
-    //   );
-    //   annots.push(annotRef);
-    //   iconStartX += iconSize + spacing;
-    // }
-    // const pageAnnots =
-    //   page4.node.lookup(PDFName.of("Annots")) || pdfDoc.context.obj([]);
-    // annots.forEach((a) => pageAnnots.push(a));
-    // page4.node.set(PDFName.of("Annots"), pageAnnots);
-
     return await pdfDoc.save();
   }
 
@@ -2265,13 +1670,7 @@ export default function KitDownload() {
       for (const row of rows) {
         const bytes = await buildPdfBytesCsvOnly(row, uploadedLogoTop);
         const blob = new Blob([bytes], { type: "application/pdf" });
-        // generated.push({
-        //   name: `${row.vendor_user_name || "Vendor"}.pdf`,
-        //   blob,
-        //   url: URL.createObjectURL(blob),
-        // });
-        // generated.push({
-        //   name: `${row.vendor_user_name || "Vendor"}_${qrData.iccId}.pdf`, // ✅ use qrData.iccId not row.icc_id
+
         generated.push({
           name: `${row.vendor_user_name || "Vendor"}_${row.icc_id || "pdf"}.pdf`,
           blob,
@@ -2285,133 +1684,6 @@ export default function KitDownload() {
       setloadingTop(false);
     }
   }
-
-  // async function handleGenerateAll() {
-  //   setLoading(true);
-
-  //   try {
-  //     const generated = [];
-
-  //     console.log("\n🚀 Starting PDF generation...");
-  //     console.log("Total CSV rows:", rows.length);
-  //     console.log("Total ZIP QR codes:", zipQrList.length);
-
-  //     for (let i = 0; i < rows.length; i++) {
-  //       const row = rows[i];
-
-  //       console.log(`\n📄 Processing row ${i + 1}: ${row.vendor_user_name}`);
-  //       console.log("   CSV ICC ID:", row.icc_id);
-
-  //       // ✅ FIX: Match QR by ICC ID instead of array index
-  //       // const qrData = zipQrList.find((qr) => qr.iccId === row.icc_id);
-  //       // Replace the qrData matching line:
-  //       // const qrData =
-  //       //   zipQrList.find((qr) => qr.iccId === row.icc_id) || zipQrList[i]; // fallback to position-based
-  //       const csvQrFilename = String(row.qr_img || "")
-  //         .trim()
-  //         .split("/")
-  //         .pop()
-  //         .replace(/\.(png|jpg|jpeg)$/i, "");
-
-  //       console.log("   CSV qr_img filename:", csvQrFilename);
-  //       console.log(
-  //         "   ZIP files available:",
-  //         zipQrList.map((q) => q.iccId),
-  //       );
-
-  //       const qrData =
-  //         zipQrList.find((qr) => qr.iccId.trim() === csvQrFilename) ||
-  //         zipQrList[i];
-  //       if (!qrData) {
-  //         console.warn(`⚠️ No QR found for row ${i + 1}`);
-  //         continue;
-  //       }
-  //       // if (!qrData) {
-  //       //   console.warn(`⚠️ No matching QR found for ICC: ${row.icc_id}`);
-  //       //   continue;
-  //       // }
-
-  //       console.log("   ✅ Matched with ZIP QR:", qrData.iccId);
-
-  //       const bytes = await buildPdfBytes(row, {
-  //         logoFile: uploadedLogo,
-  //         qrBuffer: qrData.buffer,
-  //         qrType: qrData.type,
-  //         iccFromZip: qrData.iccId, // This should match row.icc_id now
-  //       });
-
-  //       const blob = new Blob([bytes], { type: "application/pdf" });
-
-  //       generated.push({
-  //         name: `${row.vendor_user_name || "Vendor"}_${qrData.iccId}.pdf`, // ✅ qrData.iccId not row.icc_id
-  //         blob,
-  //         url: URL.createObjectURL(blob),
-  //       });
-  //     }
-
-  //     console.log(`\n✅ Generated ${generated.length} PDFs`);
-
-  //     setPdfList(generated);
-  //     setShowModal(true);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
-
-  // async function handleGenerateAll() {
-  //   setLoading(true);
-
-  //   try {
-  //     const generated = [];
-  //     const currentZipList = zipQrListRef.current; // ✅ READ FROM REF, not state
-
-  //     console.log("\n🚀 Starting PDF generation...");
-  //     console.log("Total CSV rows:", rows.length);
-  //     console.log("Total ZIP QR codes:", currentZipList.length);
-
-  //     if (currentZipList.length === 0) {
-  //       alert("ZIP QR codes not loaded. Please re-upload the ZIP file.");
-  //       return;
-  //     }
-
-  //     for (let i = 0; i < rows.length; i++) {
-  //       const row = rows[i];
-  //       console.log(`\n📄 Processing row ${i + 1}: ${row.vendor_user_name}`);
-
-  //       // ✅ Position-based matching (CSV row order = ZIP file order)
-  //       const qrData = currentZipList[i];
-
-  //       if (!qrData) {
-  //         console.warn(
-  //           `⚠️ No QR found for row ${i + 1} (only ${currentZipList.length} QR files)`,
-  //         );
-  //         continue;
-  //       }
-
-  //       console.log("   ✅ Using ZIP QR:", qrData.iccId);
-
-  //       const bytes = await buildPdfBytes(row, {
-  //         logoFile: uploadedLogo,
-  //         qrBuffer: qrData.buffer,
-  //         qrType: qrData.type,
-  //         iccFromZip: qrData.iccId,
-  //       });
-
-  //       const blob = new Blob([bytes], { type: "application/pdf" });
-  //       generated.push({
-  //         name: `${row.vendor_user_name || "Vendor"}_${qrData.iccId}.pdf`,
-  //         blob,
-  //         url: URL.createObjectURL(blob),
-  //       });
-  //     }
-
-  //     console.log(`\n✅ Generated ${generated.length} PDFs`);
-  //     setPdfList(generated);
-  //     setShowModal(true);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
 
   async function handleGenerateAll() {
     setLoading(true);
@@ -2492,9 +1764,74 @@ export default function KitDownload() {
     setUploadedLogo(null);
     setUploadedZip(null);
     setLoading(false);
-    _zipQrData = []; // ✅ clear on reset
+    _zipQrData = [];
+
+    // ✅ CRITICAL FIX
+    if (csvBottomRef.current) csvBottomRef.current.value = "";
+    if (logoBottomRef.current) logoBottomRef.current.value = "";
+    if (zipBottomRef.current) zipBottomRef.current.value = "";
   }
 
+  function resetEmailBox() {
+    setUploadedEmailCsv(null);
+
+    if (emailCsvRef.current) {
+      emailCsvRef.current.value = ""; // ✅ important
+    }
+  }
+
+  async function handleSendEmails() {
+    if (!uploadedEmailCsv) return;
+
+    const reader = new FileReader();
+
+    reader.onload = async (event) => {
+      const csvText = event.target.result;
+
+      Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (result) => {
+          // ✅ Convert CSV → JSON
+          const data = result.data
+            .map((row) => ({
+              name: row.name?.trim(),
+              email: row.email?.trim(),
+            }))
+            .filter((item) => item.name && item.email);
+
+          console.log("📦 Sending JSON:", data);
+
+          try {
+            const response = await fetch(
+              "http://localhost:8080/common/event-main-sender",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+              },
+            );
+
+            if (!response.ok) {
+              throw new Error("Failed to send");
+            }
+
+            const resData = await response.json();
+            console.log("✅ Backend response:", resData);
+
+            alert("Emails sent successfully 🚀");
+          } catch (error) {
+            console.error("❌ Error:", error);
+            alert("Failed to send emails");
+          }
+        },
+      });
+    };
+
+    reader.readAsText(uploadedEmailCsv);
+  }
   return (
     <>
       <div className="min-h-screen bg-gray-50 flex flex-col items-center gap-12 p-8">
@@ -2639,8 +1976,66 @@ export default function KitDownload() {
           <span className="text-gray-500 font-semibold">OR</span>
           <div className="w-24 h-px bg-gray-400"></div>
         </div>
+        {/* CSV INSTRUCTIONS */}
+        <div className="bg-white w-full max-w-4xl rounded-xl shadow-lg p-6">
+          <div className="mb-4">
+            <h3 className="font-semibold text-gray-700 mb-2">
+              📄 Required CSV Column Names
+            </h3>
 
-        {/* BOTTOM CARD : CSV + ZIP */}
+            <div className="overflow-x-auto">
+              <div className="overflow-hidden rounded-xl border border-gray-300">
+                <table className="w-full text-sm border-collapse">
+                  <thead className="bg-gray-50">
+                    <tr className="divide-x divide-gray-200">
+                      <th className="px-3 py-2 text-center font-medium">
+                        vendor_user_name
+                      </th>
+                      <th className="px-3 py-2 text-center font-medium">
+                        company_name
+                      </th>
+                      <th className="px-3 py-2 text-center font-medium">
+                        icc_id (or ICCID)
+                      </th>
+                      <th className="px-3 py-2 text-center font-medium">
+                        datapack
+                      </th>
+
+                      <th className="px-3 py-2 text-center font-medium">
+                        whatsapp
+                      </th>
+                      <th className="px-3 py-2 text-center font-medium">
+                        email
+                      </th>
+                      <th className="px-3 py-2 text-center font-medium">
+                        helpline
+                      </th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4 text-sm">
+            <div className="bg-gray-50 p-4 rounded">
+              <ul className="list-disc ml-5 space-y-1">
+                📌 Logo PNG format only
+              </ul>
+            </div>
+
+            <div className="bg-gray-50 p-2 rounded">
+              <ul className="list-disc ml-5 space-y-1">
+                <p>
+                  📌 Zip: QR Image names = ICC ID (e.g.{" "}
+                  <code>89444227.png</code>)
+                </p>
+                <p> 📌 PNG / JPG / JPEG supported for Logo</p>
+              </ul>
+            </div>
+          </div>
+        </div>
+        {/* 2nd CARD : CSV + ZIP */}
         <div className="bg-white rounded-xl p-6 w-full max-w-2xl shadow-2xl text-center">
           <h1 className="text-2xl font-bold mb-6">
             PDF Generator (CSV + QR ZIP)
@@ -2657,6 +2052,7 @@ export default function KitDownload() {
             <label className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
               {uploadedCsv ? uploadedCsv.name : "Upload CSV"}
               <input
+                ref={csvBottomRef}
                 type="file"
                 accept=".csv"
                 className="hidden"
@@ -2675,6 +2071,7 @@ export default function KitDownload() {
             <label className="bg-green-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-green-700 transition">
               {uploadedLogo ? uploadedLogo.name : "Upload Logo"}
               <input
+                ref={logoBottomRef}
                 type="file"
                 accept="image/png"
                 className="hidden"
@@ -2699,6 +2096,7 @@ export default function KitDownload() {
             <label className="bg-purple-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-purple-700 transition">
               {uploadedZip ? uploadedZip.name : "Upload QR ZIP"}
               <input
+                ref={zipBottomRef}
                 type="file"
                 accept=".zip"
                 onChange={handleZipUpload}
@@ -2720,6 +2118,80 @@ export default function KitDownload() {
           </button>
         </div>
 
+        {/* OR DIVIDER */}
+        {/* <div className="flex items-center gap-4">
+          <div className="w-24 h-px bg-gray-400"></div>
+          <span className="text-gray-500 font-semibold">OR</span>
+          <div className="w-24 h-px bg-gray-400"></div>
+        </div> */}
+        {/* last card */}
+        {/* <div className="bg-white w-full max-w-4xl rounded-xl shadow-lg p-6">
+          <div className="mb-4">
+            <h3 className="font-semibold text-gray-700 mb-2">
+              📄 Required CSV Column Names
+            </h3>
+
+            <div className="overflow-x-auto">
+              <div className="overflow-hidden rounded-xl border border-gray-300">
+                <table className="w-full text-sm border-collapse">
+                  <thead className="bg-gray-50">
+                    <tr className="divide-x divide-gray-200">
+                      <th className="px-3 py-2 text-center font-medium">
+                        name
+                      </th>
+                      <th className="px-3 py-2 text-center font-medium">
+                        email
+                      </th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 w-full max-w-2xl shadow-2xl text-center">
+          <h1 className="text-2xl font-bold mb-6">
+            Send Emails (CSV)
+            <button
+              onClick={resetEmailBox}
+              title="Reset"
+              className="relative left-4 text-gray-400 hover:text-blue-600 transition"
+            >
+              <RotateCcw size={20} />
+            </button>
+          </h1>
+
+          <div className="flex flex-wrap justify-center gap-4 mb-6">
+            <label className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
+              {uploadedEmailCsv ? uploadedEmailCsv.name : "Upload CSV"}
+
+              <input
+                ref={emailCsvRef}
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+
+                  setUploadedEmailCsv(file);
+                }}
+              />
+            </label>
+          </div>
+
+          <button
+            onClick={handleSendEmails}
+            disabled={!uploadedEmailCsv}
+            className={`px-6 py-3 rounded text-white transition ${
+              !uploadedEmailCsv
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-teal-600 hover:bg-teal-700"
+            }`}
+          >
+            Send Emails
+          </button>
+        </div> */}
         {/* MODAL */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
